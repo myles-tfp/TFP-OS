@@ -1,0 +1,318 @@
+/* ============================================================
+   TFP OS — brand tokens (Flying Pickle Brand Playbook)
+   ============================================================ */
+:root {
+  --dropin: #07243E;      /* navy - main bg */
+  --erne: #0D3038;        /* deep teal - panels */
+  --erne-hi: #12414b;     /* panel hover/border */
+  --dillball: #BEE515;    /* lime - accent/active */
+  --bert: #007281;        /* teal - secondary accent */
+  --baseline: #FFFFFF;    /* primary text */
+  --backcourt: #74777B;   /* muted text */
+  --flapjack: #D2D2D2;    /* light muted */
+  --volley: #F15A29;      /* orange - warning */
+  --bodybag: #EF4045;     /* red - missed/overdue */
+  --line: rgba(255, 255, 255, .08);
+
+  --font-heading: 'Bebas Neue', sans-serif;
+  --font-body: 'Poppins', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--dropin);
+  color: var(--baseline);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .display {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  letter-spacing: .02em;
+}
+
+a { color: inherit; }
+
+/* app shell layout */
+.shell { display: flex; min-height: 100vh; }
+
+/* ============================================================
+   SIDEBAR — frosted glass over animated gradient glow
+   (signature effect; everything else stays solid + calm)
+   ============================================================ */
+.sidebar {
+  width: 230px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 26px 18px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(190, 229, 21, .14);
+  /* frosted glass surface */
+  background: rgba(9, 32, 54, .55);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* the gradient glow that sits BEHIND the frosted glass — slowly drifts */
+.sidebar::before {
+  content: "";
+  position: absolute;
+  inset: -40% -60% auto -60%;
+  height: 150%;
+  z-index: -1;
+  background:
+    radial-gradient(60% 40% at 25% 12%, rgba(190, 229, 21, .55), transparent 70%),
+    radial-gradient(55% 45% at 80% 40%, rgba(0, 114, 129, .50), transparent 72%),
+    radial-gradient(70% 50% at 40% 92%, rgba(0, 114, 129, .30), transparent 70%);
+  filter: blur(28px);
+  animation: drift 9s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(6%, -4%) scale(1.08); }
+  66%  { transform: translate(-4%, 5%) scale(1.04); }
+  100% { transform: translate(3%, 3%) scale(1.10); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar::before { animation: none; }
+}
+
+/* faint grain so the gradient reads like textured glass, not flat CSS */
+.sidebar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: .05;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.brand {
+  display: flex;
+  justify-content: center;
+  padding: 4px 6px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, .12);
+  margin-bottom: 20px;
+}
+.brand img {
+  width: 150px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, .35));
+}
+
+.nav-group { margin-bottom: 18px; }
+.nav-label {
+  font-size: 10px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #9fb0ad;
+  margin: 0 0 8px 10px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  margin-bottom: 2px;
+  color: #e6ece9;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 400;
+  transition: background .15s, color .15s;
+  cursor: pointer;
+}
+.nav-item:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.nav-item.active {
+  background: rgba(190, 229, 21, .18);
+  color: var(--dillball);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(190, 229, 21, .25);
+}
+.nav-item .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .55;
+}
+
+.sidebar-foot {
+  margin-top: auto;
+  font-size: 12px;
+  color: #9fb0ad;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, .12);
+}
+.sidebar-foot .who { color: #e6ece9; margin-bottom: 4px; overflow-wrap: anywhere; }
+.sidebar-foot .signout {
+  background: none;
+  border: none;
+  color: #9fb0ad;
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+.sidebar-foot .signout:hover { color: #fff; }
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--dillball);
+  margin-top: 8px;
+}
+.role-pill .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dillball);
+}
+
+/* ============================================================
+   MAIN — solid, calm surfaces (no glass here)
+   ============================================================ */
+.main { flex: 1; padding: 34px 40px 60px; max-width: 1180px; }
+.page-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.page-head h1 { font-size: 44px; line-height: 1; }
+.page-head .date { font-size: 13px; color: var(--backcourt); }
+.subtitle {
+  color: var(--flapjack);
+  font-size: 14px;
+  font-weight: 300;
+  margin-bottom: 28px;
+}
+
+.panel {
+  background: var(--erne);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px 24px;
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.panel-head h2 { font-size: 22px; }
+.panel-note { font-size: 12px; color: var(--backcourt); margin-bottom: 18px; }
+
+.btn {
+  background: var(--dillball);
+  color: var(--dropin);
+  border: none;
+  border-radius: 9px;
+  padding: 11px 20px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform .1s, filter .15s;
+}
+.btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.btn:disabled { opacity: .6; cursor: default; transform: none; }
+.btn.ghost { background: transparent; border: 1px solid var(--dillball); color: var(--dillball); }
+.btn.full { width: 100%; }
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.login-card {
+  background: var(--erne);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 38px 36px;
+  width: 100%;
+  max-width: 400px;
+}
+.login-card .brand-logo {
+  display: block;
+  width: 170px;
+  height: auto;
+  margin: 0 auto 26px;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, .35));
+}
+.login-card h1 { font-size: 34px; text-align: center; margin-bottom: 4px; }
+.login-card .lede {
+  font-size: 13px;
+  color: var(--flapjack);
+  font-weight: 300;
+  text-align: center;
+  margin-bottom: 26px;
+}
+.field { margin-bottom: 14px; }
+.field label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--backcourt);
+  margin-bottom: 6px;
+}
+.field input {
+  width: 100%;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 11px 14px;
+  color: var(--baseline);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color .15s;
+}
+.field input:focus { border-color: var(--dillball); }
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--backcourt);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.auth-error {
+  background: rgba(239, 64, 69, .12);
+  border: 1px solid rgba(239, 64, 69, .4);
+  color: #ff9a9d;
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.auth-note { font-size: 12px; color: var(--backcourt); text-align: center; margin-top: 18px; }
+
+@media (max-width: 1000px) {
+  .sidebar { display: none; }
+  .main { padding: 24px; }
+}
