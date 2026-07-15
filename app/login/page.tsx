@@ -10,9 +10,9 @@ const ERROR_MESSAGES: Record<string, string> = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; detail?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, detail } = await searchParams;
   const errorMessage = error ? ERROR_MESSAGES[error] ?? ERROR_MESSAGES.auth_failed : null;
 
   return (
@@ -31,6 +31,11 @@ export default async function LoginPage({
           Your home base for running your Flying Pickle location.
         </p>
         <LoginForm serverError={errorMessage} />
+        {detail && (
+          <p className="auth-note" style={{ opacity: 0.7 }}>
+            Diagnostic: {detail}
+          </p>
+        )}
         <p className="auth-note">
           Access is by invitation from TFP HQ — sign in with the email on your
           franchise agreement.

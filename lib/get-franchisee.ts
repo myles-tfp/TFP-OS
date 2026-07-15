@@ -16,7 +16,7 @@ export async function getFranchisee(): Promise<Franchisee> {
 
   if (!user) redirect("/login");
 
-  const { data: franchisee } = await supabase
+  const { data: franchisee, error } = await supabase
     .from("franchisees")
     .select("*")
     .ilike("email", user.email ?? "")
@@ -25,7 +25,15 @@ export async function getFranchisee(): Promise<Franchisee> {
 
   if (!franchisee) {
     await supabase.auth.signOut();
-    redirect("/login?error=not_authorized");
+    // TEMP diagnostic: surface why the roster check failed.
+    const detail = error
+      ? `db error ${error.code ?? ""}: ${error.message}`
+      : `query ok but no row matched "${user.email}"`;
+    redirect(
+      `/login?error=not_authorized&detail=${encodeURIComponent(
+        detail.slice(0, 200)
+      )}`
+    );
   }
 
   return franchisee as Franchisee;
