@@ -48,6 +48,13 @@ returns boolean language sql stable security definer set search_path = public as
 $$;
 
 -- ------------------------------------------------------------
+-- Grants (table-level access; RLS below decides which rows)
+-- ------------------------------------------------------------
+grant usage on schema public to authenticated, anon;
+grant select, insert, update, delete on public.franchisees to authenticated;
+grant all on public.franchisees to service_role;
+
+-- ------------------------------------------------------------
 -- Row Level Security
 -- ------------------------------------------------------------
 alter table public.franchisees enable row level security;
