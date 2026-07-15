@@ -25,15 +25,8 @@ export async function getFranchisee(): Promise<Franchisee> {
 
   if (!franchisee) {
     await supabase.auth.signOut();
-    // TEMP diagnostic: surface why the roster check failed.
-    const detail = error
-      ? `db error ${error.code ?? ""}: ${error.message}`
-      : `query ok but no row matched "${user.email}"`;
-    redirect(
-      `/login?error=not_authorized&detail=${encodeURIComponent(
-        detail.slice(0, 200)
-      )}`
-    );
+    if (error) console.error("franchisees lookup failed:", error);
+    redirect("/login?error=not_authorized");
   }
 
   return franchisee as Franchisee;
