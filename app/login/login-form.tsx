@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "signin" | "signup";
 
 export function LoginForm({ serverError }: { serverError: string | null }) {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,6 +65,16 @@ export function LoginForm({ serverError }: { serverError: string | null }) {
         setBusy(false);
         return;
       }
+      if (data.user && data.user.identities?.length === 0) {
+        // Supabase quietly accepts duplicate sign-ups without sending an
+        // email — surface the truth instead.
+        setError(
+          "That email already has an account — sign in with your password instead."
+        );
+        setMode("signin");
+        setBusy(false);
+        return;
+      }
       if (!data.session) {
         // Email confirmation is on — no session until they click the link.
         setNotice(
@@ -79,8 +87,9 @@ export function LoginForm({ serverError }: { serverError: string | null }) {
       }
     }
 
-    router.push("/");
-    router.refresh();
+    // Full-page navigation so the fresh auth cookies are guaranteed to be
+    // sent and no stale client-side cache can bounce us back to login.
+    window.location.assign("/");
   };
 
   return (

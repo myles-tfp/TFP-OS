@@ -34,6 +34,16 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // If an email confirmation link lands anywhere with a ?code param,
+  // route it through the callback so the code gets exchanged for a session.
+  const code = request.nextUrl.searchParams.get("code");
+  if (!user && code && !request.nextUrl.pathname.startsWith("/auth/callback")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
+    url.search = `code=${encodeURIComponent(code)}`;
+    return NextResponse.redirect(url);
+  }
+
   const isPublic = PUBLIC_PATHS.some((p) =>
     request.nextUrl.pathname.startsWith(p)
   );
