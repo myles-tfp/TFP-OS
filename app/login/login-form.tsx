@@ -12,6 +12,7 @@ export function LoginForm({ serverError }: { serverError: string | null }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(serverError);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const friendly = (message: string) => {
@@ -47,6 +48,8 @@ export function LoginForm({ serverError }: { serverError: string | null }) {
     setBusy(true);
     const supabase = createClient();
 
+    setNotice(null);
+
     if (mode === "signin") {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -58,9 +61,19 @@ export function LoginForm({ serverError }: { serverError: string | null }) {
         return;
       }
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
         setError(friendly(error.message));
+        setBusy(false);
+        return;
+      }
+      if (!data.session) {
+        // Email confirmation is on — no session until they click the link.
+        setNotice(
+          "Almost there — we sent a confirmation link to your email. Click it, then sign in here."
+        );
+        setMode("signin");
+        setPassword("");
         setBusy(false);
         return;
       }
@@ -73,6 +86,7 @@ export function LoginForm({ serverError }: { serverError: string | null }) {
   return (
     <div>
       {error && <div className="auth-error">{error}</div>}
+      {notice && <div className="auth-notice">{notice}</div>}
 
       <button
         type="button"

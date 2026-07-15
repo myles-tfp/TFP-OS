@@ -311,6 +311,15 @@ a { color: inherit; }
   margin-bottom: 16px;
 }
 .auth-note { font-size: 12px; color: var(--backcourt); text-align: center; margin-top: 18px; }
+.auth-notice {
+  background: rgba(190, 229, 21, .10);
+  border: 1px solid rgba(190, 229, 21, .35);
+  color: var(--dillball);
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
 
 @media (max-width: 1000px) {
   .sidebar { display: none; }
