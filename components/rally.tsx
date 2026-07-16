@@ -1,36 +1,26 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { RallyIcon } from "@/components/rally-icon";
-
-type Msg = { role: "user" | "rally"; text: string };
-
-const GREETING =
-  "Hey, I'm Rally! 🏓 Soon I'll be answering your questions straight from the TFP playbooks, resources, and updates. HQ is still wiring up my brain — but say hi anyway!";
-
-const CANNED_REPLY =
-  "Love the enthusiasm! My brain isn't plugged in quite yet — HQ is setting me up. Check back soon and I'll have real answers from the TFP playbooks.";
 
 export function RallyNavItem() {
   return (
     <button
       type="button"
-      className="nav-item rally-nav"
+      className="nav-item soon rally-nav"
       onClick={() => window.dispatchEvent(new CustomEvent("rally:toggle"))}
     >
       <span className="rally-nav-icon">
         <RallyIcon size={20} animated={false} />
       </span>
       Rally
+      <span className="soon-pill">Soon</span>
     </button>
   );
 }
 
 export function RallyPanel() {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([{ role: "rally", text: GREETING }]);
-  const [draft, setDraft] = useState("");
-  const bodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const toggle = () => setOpen((o) => !o);
@@ -45,25 +35,10 @@ export function RallyPanel() {
     };
   }, []);
 
-  useEffect(() => {
-    bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, open]);
-
-  const send = (e: React.FormEvent) => {
-    e.preventDefault();
-    const text = draft.trim();
-    if (!text) return;
-    setDraft("");
-    setMessages((m) => [...m, { role: "user", text }]);
-    window.setTimeout(() => {
-      setMessages((m) => [...m, { role: "rally", text: CANNED_REPLY }]);
-    }, 600);
-  };
-
   return (
     <aside className={`rally-panel${open ? " open" : ""}`} aria-hidden={!open}>
       <div className="rally-head">
-        <RallyIcon size={44} />
+        <RallyIcon size={40} />
         <div>
           <h2>Rally</h2>
           <p>The TFP assistant</p>
@@ -79,26 +54,15 @@ export function RallyPanel() {
         </button>
       </div>
 
-      <div className="rally-body" ref={bodyRef}>
-        {messages.map((m, i) => (
-          <div key={i} className={`rally-msg ${m.role}`}>
-            {m.text}
-          </div>
-        ))}
+      <div className="rally-coming">
+        <RallyIcon size={130} />
+        <h3>Coming soon</h3>
+        <p>
+          Rally is in training. Soon he&apos;ll answer your questions straight
+          from the TFP playbooks, resources, and updates — always the current
+          version, never a guess.
+        </p>
       </div>
-
-      <form className="rally-input" onSubmit={send}>
-        <input
-          type="text"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Ask Rally anything…"
-          aria-label="Message Rally"
-        />
-        <button type="submit" className="btn" disabled={!draft.trim()}>
-          Send
-        </button>
-      </form>
     </aside>
   );
 }

@@ -63,7 +63,7 @@ export function Feed({
         }
 
         return (
-          <article className="post" key={post.id}>
+          <article className="post" key={post.id} id={`post-${post.id}`}>
             <div className="post-meta">
               <div className="avatar">TFP</div>
               <div>

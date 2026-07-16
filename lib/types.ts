@@ -7,4 +7,5 @@ export interface Franchisee {
   role: Role;
   status: "active" | "inactive";
   created_at: string;
+  founding_members?: number | null;
 }

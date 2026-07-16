@@ -7,29 +7,54 @@ export default async function HomePage() {
   const franchisee = await getFranchisee();
   const supabase = await createClient();
 
-  const [{ data: posts }, { data: rosterCount }, { data: resources }, { data: saves }] =
-    await Promise.all([
-      supabase
-        .from("posts")
-        .select(
-          "id, title, body, media_url, media_type, requires_action, created_at, topics(name), reactions(franchisee_id, emoji, franchisees(location_name, email))"
-        )
-        .order("created_at", { ascending: false })
-        .limit(20),
-      supabase.rpc("roster_count"),
-      supabase
-        .from("resources")
-        .select("id, title, type, url, updated_at, topics(name)")
-        .order("updated_at", { ascending: false })
-        .limit(5),
-      supabase.from("saves").select("post_id, resource_id"),
-    ]);
+  const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+
+  const [
+    { data: posts },
+    { data: rosterCount },
+    { data: resources },
+    { data: saves },
+    { count: newResourceCount },
+  ] = await Promise.all([
+    supabase
+      .from("posts")
+      .select(
+        "id, title, body, media_url, media_type, requires_action, created_at, topics(name), reactions(franchisee_id, emoji, franchisees(location_name, email))"
+      )
+      .order("created_at", { ascending: false })
+      .limit(20),
+    supabase.rpc("roster_count"),
+    supabase
+      .from("resources")
+      .select("id, title, type, url, updated_at, topics(name)")
+      .order("updated_at", { ascending: false })
+      .limit(5),
+    supabase.from("saves").select("post_id, resource_id"),
+    supabase
+      .from("resources")
+      .select("id", { count: "exact", head: true })
+      .gte("updated_at", weekAgo),
+  ]);
 
   const savedPostIds = (saves ?? [])
     .map((s) => s.post_id)
     .filter(Boolean) as string[];
   const savedResourceIds = new Set(
     (saves ?? []).map((s) => s.resource_id).filter(Boolean)
+  );
+
+  const allPosts = (posts ?? []) as unknown as FeedPost[];
+  const unread = allPosts.filter(
+    (p) => !p.reactions.some((r) => r.franchisee_id === franchisee.id)
+  );
+  const banner = unread.find((p) => p.requires_action) ?? null;
+
+  const monthsIn = Math.min(
+    6,
+    Math.floor(
+      (Date.now() - new Date(franchisee.created_at).getTime()) /
+        (30.44 * 24 * 3600 * 1000)
+    ) + 1
   );
 
   const today = new Date().toLocaleDateString("en-US", {
@@ -52,6 +77,43 @@ export default async function HomePage() {
         onboarding, all in one place.
       </p>
 
+      <section className="stats">
+        <div className="stat accent">
+          <div className="k">Onboarding</div>
+          <div className="v">Month {monthsIn}</div>
+          <div className="sub">of your 6-month plan</div>
+        </div>
+        <div className="stat">
+          <div className="k">Founding members</div>
+          <div className="v">{franchisee.founding_members ?? "—"}</div>
+          <div className="sub">goal: 100 by launch</div>
+        </div>
+        <div className="stat">
+          <div className="k">New resources</div>
+          <div className="v">{newResourceCount ?? 0}</div>
+          <div className="sub">added this week</div>
+        </div>
+        <div className={`stat${unread.length > 0 ? " warn" : ""}`}>
+          <div className="k">Needs your read</div>
+          <div className="v">{unread.length}</div>
+          <div className="sub">
+            {unread.length === 0 ? "all caught up 🎉" : "unread updates below"}
+          </div>
+        </div>
+      </section>
+
+      {banner && (
+        <div className="banner">
+          <div>
+            <h3>{banner.title || "Action needed"}</h3>
+            <p>{banner.body.slice(0, 120)}{banner.body.length > 120 ? "…" : ""}</p>
+          </div>
+          <a className="btn" href={`#post-${banner.id}`}>
+            View update
+          </a>
+        </div>
+      )}
+
       <div className="cols">
         <section className="panel">
           <div className="panel-head">
@@ -62,7 +124,7 @@ export default async function HomePage() {
             reaction.
           </p>
           <Feed
-            posts={(posts ?? []) as unknown as FeedPost[]}
+            posts={allPosts}
             meId={franchisee.id}
             isAdmin={franchisee.role === "admin"}
             savedPostIds={savedPostIds}
