@@ -28,7 +28,7 @@ export type Resource = {
   type: string;
   url: string;
   updated_at: string;
-  resource_categories: { name: string } | null;
+  topics: { name: string } | null;
 };
 
 export function ResourceRow({
@@ -48,8 +48,8 @@ export function ResourceRow({
           {TYPE_LABELS[resource.type] ?? "Link"}
         </div>
       </div>
-      {showCategory && resource.resource_categories && (
-        <span className="cat-pill">{resource.resource_categories.name}</span>
+      {showCategory && resource.topics && (
+        <span className="cat-pill">{resource.topics.name}</span>
       )}
     </a>
   );

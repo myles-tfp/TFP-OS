@@ -1,18 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getFranchisee } from "@/lib/get-franchisee";
-import { createPost, createResource, createCategory } from "@/app/(app)/actions";
-
-const RESOURCE_TYPES = [
-  ["doc", "Google Doc"],
-  ["sheet", "Google Sheet"],
-  ["slides", "Slides"],
-  ["pdf", "PDF"],
-  ["video", "Video"],
-  ["image", "Image / photo"],
-  ["canva", "Canva project"],
-  ["link", "Other link"],
-] as const;
+import { createBoard } from "@/app/(app)/actions";
+import { PostComposer } from "@/components/post-composer";
+import { ResourceForm } from "@/components/resource-form";
 
 export default async function AdminPage({
   searchParams,
@@ -25,10 +16,12 @@ export default async function AdminPage({
   const { error } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: channels }, { data: categories }] = await Promise.all([
-    supabase.from("channels").select("id, name").order("sort_order"),
-    supabase.from("resource_categories").select("id, name").order("sort_order"),
-  ]);
+  const { data: topics } = await supabase
+    .from("topics")
+    .select("id, name, status")
+    .order("sort_order");
+
+  const liveTopics = (topics ?? []).filter((t) => t.status === "live");
 
   return (
     <>
@@ -36,8 +29,8 @@ export default async function AdminPage({
         <h1>Admin</h1>
       </div>
       <p className="subtitle">
-        Post updates and manage the resource library. Full admin tools
-        (roster, read stats) are coming in a later step.
+        Post updates and manage the library. Full admin tools (roster, read
+        stats) are coming in a later step.
       </p>
 
       {error && (
@@ -52,43 +45,7 @@ export default async function AdminPage({
           <div className="panel-head">
             <h2>New post</h2>
           </div>
-          <form action={createPost}>
-            <div className="field">
-              <label htmlFor="channel_id">Channel</label>
-              <select id="channel_id" name="channel_id" required>
-                {(channels ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label htmlFor="title">Title (optional)</label>
-              <input id="title" name="title" type="text" placeholder="Q3 Founders push starts Monday" />
-            </div>
-            <div className="field">
-              <label htmlFor="body">Message</label>
-              <textarea
-                id="body"
-                name="body"
-                required
-                rows={5}
-                placeholder="What do franchisees need to know?"
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="media_url">Media or link URL (optional)</label>
-              <input id="media_url" name="media_url" type="url" placeholder="https://…" />
-            </div>
-            <label className="check">
-              <input type="checkbox" name="requires_action" />
-              Requires action (shows the lime &quot;Action needed&quot; tag)
-            </label>
-            <button type="submit" className="btn" style={{ marginTop: 16 }}>
-              Publish to feed
-            </button>
-          </form>
+          <PostComposer topics={liveTopics} />
         </section>
 
         <div style={{ display: "grid", gap: 22 }}>
@@ -97,76 +54,36 @@ export default async function AdminPage({
               <h2>New resource</h2>
             </div>
             <p className="panel-note">
-              Paste a link from Drive, Canva, or anywhere else — it opens in a
-              new tab for franchisees.
+              Link something from Drive or Canva, or upload a file directly.
             </p>
-            <form action={createResource}>
-              <div className="field">
-                <label htmlFor="r-title">Title</label>
-                <input
-                  id="r-title"
-                  name="title"
-                  type="text"
-                  required
-                  placeholder="Grand Opening Playbook"
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="r-category">Category</label>
-                <select id="r-category" name="category_id" required>
-                  {(categories ?? []).map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor="r-type">Type</label>
-                <select id="r-type" name="type" required defaultValue="doc">
-                  {RESOURCE_TYPES.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor="r-url">Link</label>
-                <input
-                  id="r-url"
-                  name="url"
-                  type="url"
-                  required
-                  placeholder="https://docs.google.com/…"
-                />
-              </div>
-              <button type="submit" className="btn">
-                Add resource
-              </button>
-            </form>
+            <ResourceForm topics={liveTopics} />
           </section>
 
           <section className="panel">
             <div className="panel-head">
-              <h2>New category</h2>
+              <h2>New board</h2>
             </div>
             <p className="panel-note">
-              Categories appear in everyone&apos;s sidebar under Resources.
+              Boards appear in everyone&apos;s sidebar and collect posts +
+              resources on one topic.
             </p>
-            <form action={createCategory}>
+            <form action={createBoard}>
               <div className="field">
-                <label htmlFor="c-name">Name</label>
+                <label htmlFor="b-name">Name</label>
                 <input
-                  id="c-name"
+                  id="b-name"
                   name="name"
                   type="text"
                   required
                   placeholder="Training"
                 />
               </div>
+              <label className="check" style={{ marginBottom: 14 }}>
+                <input type="checkbox" name="coming_soon" />
+                Grayed out for now (&quot;coming soon&quot;)
+              </label>
               <button type="submit" className="btn ghost">
-                Add category
+                Add board
               </button>
             </form>
           </section>

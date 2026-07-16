@@ -1,4 +1,5 @@
 import { Reactions } from "@/components/reactions";
+import { PostMedia } from "@/components/post-media";
 import { timeAgo } from "@/lib/format";
 
 export type FeedPost = {
@@ -9,7 +10,7 @@ export type FeedPost = {
   media_type: string | null;
   requires_action: boolean;
   created_at: string;
-  channels: { name: string } | null;
+  topics: { name: string } | null;
   reactions: { franchisee_id: string; emoji: string }[];
 };
 
@@ -48,28 +49,23 @@ export function Feed({
               <div className="avatar">TFP</div>
               <div>
                 <div className="name">
-                  TFP HQ{post.channels ? ` · ${post.channels.name}` : ""}
+                  TFP HQ{post.topics ? ` · ${post.topics.name}` : ""}
                 </div>
                 <div className="time">{timeAgo(post.created_at)}</div>
               </div>
               {post.requires_action && <span className="tag">Action needed</span>}
             </div>
             {post.title && (
-              <p className="post-body" style={{ fontWeight: 500, color: "var(--baseline)", marginBottom: 4 }}>
+              <p
+                className="post-body"
+                style={{ fontWeight: 500, color: "var(--baseline)", marginBottom: 4 }}
+              >
                 {post.title}
               </p>
             )}
             <p className="post-body">{post.body}</p>
             {post.media_url && (
-              <a
-                className="post-media"
-                href={post.media_url}
-                target="_blank"
-                rel="noreferrer"
-                style={{ textDecoration: "none" }}
-              >
-                ▶&nbsp; Open attached media
-              </a>
+              <PostMedia url={post.media_url} type={post.media_type} />
             )}
             <Reactions
               postId={post.id}

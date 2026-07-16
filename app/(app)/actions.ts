@@ -30,62 +30,7 @@ export async function toggleReaction(postId: string, emoji: string) {
   revalidatePath("/");
 }
 
-export async function createPost(formData: FormData) {
-  const franchisee = await getFranchisee();
-  if (franchisee.role !== "admin") redirect("/");
-
-  const supabase = await createClient();
-
-  const body = String(formData.get("body") ?? "").trim();
-  const channelId = String(formData.get("channel_id") ?? "");
-  if (!body || !channelId) redirect("/admin?error=missing");
-
-  const title = String(formData.get("title") ?? "").trim() || null;
-  const mediaUrl = String(formData.get("media_url") ?? "").trim() || null;
-
-  const { error } = await supabase.from("posts").insert({
-    channel_id: channelId,
-    title,
-    body,
-    media_url: mediaUrl,
-    media_type: mediaUrl ? "link" : null,
-    requires_action: formData.get("requires_action") === "on",
-    created_by: franchisee.id,
-  });
-
-  if (error) redirect(`/admin?error=${encodeURIComponent(error.message)}`);
-
-  revalidatePath("/");
-  redirect("/?posted=1");
-}
-
-export async function createResource(formData: FormData) {
-  const franchisee = await getFranchisee();
-  if (franchisee.role !== "admin") redirect("/");
-
-  const supabase = await createClient();
-
-  const title = String(formData.get("title") ?? "").trim();
-  const url = String(formData.get("url") ?? "").trim();
-  const categoryId = String(formData.get("category_id") ?? "");
-  const type = String(formData.get("type") ?? "link");
-  if (!title || !url || !categoryId) redirect("/admin?error=missing");
-
-  const { error } = await supabase.from("resources").insert({
-    category_id: categoryId,
-    title,
-    type,
-    url,
-  });
-
-  if (error) redirect(`/admin?error=${encodeURIComponent(error.message)}`);
-
-  revalidatePath("/");
-  revalidatePath(`/resources/${categoryId}`);
-  redirect(`/resources/${categoryId}`);
-}
-
-export async function createCategory(formData: FormData) {
+export async function createBoard(formData: FormData) {
   const franchisee = await getFranchisee();
   if (franchisee.role !== "admin") redirect("/");
 
@@ -95,15 +40,16 @@ export async function createCategory(formData: FormData) {
   if (!name) redirect("/admin?error=missing");
 
   const { data: last } = await supabase
-    .from("resource_categories")
+    .from("topics")
     .select("sort_order")
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  const { error } = await supabase.from("resource_categories").insert({
+  const { error } = await supabase.from("topics").insert({
     name,
     sort_order: (last?.sort_order ?? 0) + 1,
+    status: formData.get("coming_soon") === "on" ? "coming_soon" : "live",
   });
 
   if (error) redirect(`/admin?error=${encodeURIComponent(error.message)}`);

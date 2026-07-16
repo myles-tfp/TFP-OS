@@ -2,12 +2,18 @@ import Image from "next/image";
 import { NavItem } from "@/components/nav-item";
 import type { Franchisee } from "@/lib/types";
 
+export type Topic = {
+  id: string;
+  name: string;
+  status: "live" | "coming_soon";
+};
+
 export function Sidebar({
   franchisee,
-  categories,
+  topics,
 }: {
   franchisee: Franchisee;
-  categories: { id: string; name: string }[];
+  topics: Topic[];
 }) {
   return (
     <aside className="sidebar">
@@ -24,15 +30,19 @@ export function Sidebar({
       <div className="nav-group">
         <p className="nav-label">This Week</p>
         <NavItem name="Home" href="/" />
-        <NavItem name="Announcements" href={null} />
       </div>
 
       <div className="nav-group">
-        <p className="nav-label">Resources</p>
-        {categories.map((cat) => (
-          <NavItem key={cat.id} name={cat.name} href={`/resources/${cat.id}`} />
+        <p className="nav-label">Boards</p>
+        {topics.map((t) => (
+          <NavItem
+            key={t.id}
+            name={t.name}
+            href={t.status === "live" ? `/boards/${t.id}` : null}
+            soon={t.status !== "live"}
+          />
         ))}
-        <NavItem name="AI Assistant" href={null} />
+        <NavItem name="AI Assistant" href={null} soon />
       </div>
 
       {franchisee.role === "admin" && (
