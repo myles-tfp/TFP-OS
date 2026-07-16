@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { NavItem } from "@/components/nav-item";
 import type { Franchisee } from "@/lib/types";
 
 /**
@@ -16,7 +16,7 @@ const NAV_GROUPS: {
     label: "This Week",
     items: [
       { name: "Home", href: "/" },
-      { name: "Announcements", href: null }, // ships with the feed
+      { name: "Announcements", href: null }, // ships with the feed filters
     ],
   },
   {
@@ -30,7 +30,7 @@ const NAV_GROUPS: {
   {
     label: "Manage",
     adminOnly: true,
-    items: [{ name: "Admin", href: null }], // ships with the admin dashboard
+    items: [{ name: "Admin", href: "/admin" }],
   },
 ];
 
@@ -51,28 +51,9 @@ export function Sidebar({ franchisee }: { franchisee: Franchisee }) {
         (group) => (
           <div className="nav-group" key={group.label}>
             <p className="nav-label">{group.label}</p>
-            {group.items.map((item) =>
-              item.href ? (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`nav-item${item.href === "/" ? " active" : ""}`}
-                >
-                  <span className="dot" />
-                  {item.name}
-                </Link>
-              ) : (
-                <a
-                  key={item.name}
-                  className="nav-item"
-                  title="Coming soon"
-                  aria-disabled="true"
-                >
-                  <span className="dot" />
-                  {item.name}
-                </a>
-              )
-            )}
+            {group.items.map((item) => (
+              <NavItem key={item.name} name={item.name} href={item.href} />
+            ))}
           </div>
         )
       )}
