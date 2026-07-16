@@ -1,4 +1,5 @@
 import { Sidebar, type Topic } from "@/components/sidebar";
+import { RallyPanel } from "@/components/rally";
 import { getFranchisee } from "@/lib/get-franchisee";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,6 +19,7 @@ export default async function AppLayout({
     <div className="shell">
       <Sidebar franchisee={franchisee} topics={(topics ?? []) as Topic[]} />
       <main className="main">{children}</main>
+      <RallyPanel />
     </div>
   );
 }

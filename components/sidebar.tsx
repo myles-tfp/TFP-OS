@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { NavItem } from "@/components/nav-item";
+import { RallyNavItem } from "@/components/rally";
 import type { Franchisee } from "@/lib/types";
 
 export type Topic = {
@@ -43,7 +44,7 @@ export function Sidebar({
             soon={t.status !== "live"}
           />
         ))}
-        <NavItem name="AI Assistant" href={null} soon />
+        <RallyNavItem />
       </div>
 
       {franchisee.role === "admin" && (
