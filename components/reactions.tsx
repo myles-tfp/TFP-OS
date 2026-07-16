@@ -14,12 +14,15 @@ export function Reactions({
   postId,
   counts,
   mine,
+  who,
   readCount,
   rosterCount,
 }: {
   postId: string;
   counts: Record<string, number>;
   mine: string[];
+  /** admin only: emoji -> names of who reacted */
+  who?: Record<string, string[]>;
   readCount: number;
   rosterCount: number;
 }) {
@@ -52,17 +55,22 @@ export function Reactions({
       {EMOJIS.map((emoji) => {
         const count = optimistic.counts[emoji] ?? 0;
         const on = optimistic.mine.includes(emoji);
+        const names = who?.[emoji];
         return (
-          <button
-            key={emoji}
-            type="button"
-            className={`react${on ? " on" : ""}`}
-            onClick={() => onToggle(emoji)}
-            aria-pressed={on}
-          >
-            <span>{emoji}</span>
-            {count > 0 && <span className="n">{count}</span>}
-          </button>
+          <span className="react-wrap" key={emoji}>
+            <button
+              type="button"
+              className={`react${on ? " on" : ""}`}
+              onClick={() => onToggle(emoji)}
+              aria-pressed={on}
+            >
+              <span>{emoji}</span>
+              {count > 0 && <span className="n">{count}</span>}
+            </button>
+            {names && names.length > 0 && (
+              <span className="who-tip">{names.join(", ")}</span>
+            )}
+          </span>
         );
       })}
       <span className="read-count">

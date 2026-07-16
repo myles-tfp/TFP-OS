@@ -7,15 +7,34 @@ import { PostMedia } from "@/components/post-media";
 
 type Topic = { id: string; name: string };
 
-export function PostComposer({ topics }: { topics: Topic[] }) {
+export type EditablePost = {
+  id: string;
+  topic_id: string;
+  title: string | null;
+  body: string;
+  media_url: string | null;
+  media_type: string | null;
+  requires_action: boolean;
+};
+
+export function PostComposer({
+  topics,
+  initial,
+}: {
+  topics: Topic[];
+  initial?: EditablePost;
+}) {
   const [tab, setTab] = useState<"write" | "preview">("write");
-  const [topicId, setTopicId] = useState(topics[0]?.id ?? "");
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
+  const [topicId, setTopicId] = useState(initial?.topic_id ?? topics[0]?.id ?? "");
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [body, setBody] = useState(initial?.body ?? "");
   const [mediaUrl, setMediaUrl] = useState("");
+  const [keepMedia, setKeepMedia] = useState(!!initial?.media_url);
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
-  const [requiresAction, setRequiresAction] = useState(false);
+  const [requiresAction, setRequiresAction] = useState(
+    initial?.requires_action ?? false
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,10 +47,15 @@ export function PostComposer({ topics }: { topics: Topic[] }) {
       return { url: filePreview ?? "", type };
     }
     const trimmed = mediaUrl.trim();
-    if (!trimmed) return null;
-    const embed = toEmbedUrl(trimmed);
-    if (embed) return { url: embed, type: "embed" };
-    return { url: trimmed, type: "link" };
+    if (trimmed) {
+      const embed = toEmbedUrl(trimmed);
+      if (embed) return { url: embed, type: "embed" };
+      return { url: trimmed, type: "link" };
+    }
+    if (initial?.media_url && keepMedia) {
+      return { url: initial.media_url, type: initial.media_type ?? "link" };
+    }
+    return null;
   };
 
   const onFile = (f: File | null) => {
@@ -68,15 +92,25 @@ export function PostComposer({ topics }: { topics: Topic[] }) {
         media = resolveMedia();
       }
 
-      const { error: insErr } = await supabase.from("posts").insert({
+      const row = {
         topic_id: topicId,
         title: title.trim() || null,
         body: body.trim(),
         media_url: media?.url ?? null,
         media_type: media?.type ?? null,
         requires_action: requiresAction,
-      });
-      if (insErr) throw new Error(insErr.message);
+      };
+
+      if (initial) {
+        const { error: updErr } = await supabase
+          .from("posts")
+          .update(row)
+          .eq("id", initial.id);
+        if (updErr) throw new Error(updErr.message);
+      } else {
+        const { error: insErr } = await supabase.from("posts").insert(row);
+        if (insErr) throw new Error(insErr.message);
+      }
 
       window.location.assign("/");
     } catch (e) {
@@ -144,6 +178,23 @@ export function PostComposer({ topics }: { topics: Topic[] }) {
               placeholder="What do franchisees need to know?"
             />
           </div>
+          {initial?.media_url && keepMedia && !file && !mediaUrl.trim() && (
+            <div className="field">
+              <label>Current media</label>
+              <p className="panel-note" style={{ marginBottom: 6 }}>
+                This post has attached media — it stays unless you replace or
+                remove it.{" "}
+                <button
+                  type="button"
+                  className="signout"
+                  style={{ color: "var(--bodybag)" }}
+                  onClick={() => setKeepMedia(false)}
+                >
+                  Remove media
+                </button>
+              </p>
+            </div>
+          )}
           <div className="field">
             <label htmlFor="p-url">Video or link URL (YouTube, Vimeo, Loom embed automatically)</label>
             <input
@@ -215,7 +266,11 @@ export function PostComposer({ topics }: { topics: Topic[] }) {
         onClick={publish}
         disabled={busy}
       >
-        {busy ? "Publishing…" : "Publish to feed"}
+        {busy
+          ? "Saving…"
+          : initial
+            ? "Save changes"
+            : "Publish to feed"}
       </button>
     </div>
   );

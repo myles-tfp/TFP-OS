@@ -30,6 +30,7 @@ export function Sidebar({
       <div className="nav-group">
         <p className="nav-label">This Week</p>
         <NavItem name="Home" href="/" />
+        <NavItem name="Saved" href="/saved" />
       </div>
 
       <div className="nav-group">

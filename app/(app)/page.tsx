@@ -7,12 +7,12 @@ export default async function HomePage() {
   const franchisee = await getFranchisee();
   const supabase = await createClient();
 
-  const [{ data: posts }, { data: rosterCount }, { data: resources }] =
+  const [{ data: posts }, { data: rosterCount }, { data: resources }, { data: saves }] =
     await Promise.all([
       supabase
         .from("posts")
         .select(
-          "id, title, body, media_url, media_type, requires_action, created_at, topics(name), reactions(franchisee_id, emoji)"
+          "id, title, body, media_url, media_type, requires_action, created_at, topics(name), reactions(franchisee_id, emoji, franchisees(location_name, email))"
         )
         .order("created_at", { ascending: false })
         .limit(20),
@@ -22,7 +22,15 @@ export default async function HomePage() {
         .select("id, title, type, url, updated_at, topics(name)")
         .order("updated_at", { ascending: false })
         .limit(5),
+      supabase.from("saves").select("post_id, resource_id"),
     ]);
+
+  const savedPostIds = (saves ?? [])
+    .map((s) => s.post_id)
+    .filter(Boolean) as string[];
+  const savedResourceIds = new Set(
+    (saves ?? []).map((s) => s.resource_id).filter(Boolean)
+  );
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -56,6 +64,8 @@ export default async function HomePage() {
           <Feed
             posts={(posts ?? []) as unknown as FeedPost[]}
             meId={franchisee.id}
+            isAdmin={franchisee.role === "admin"}
+            savedPostIds={savedPostIds}
             rosterCount={rosterCount ?? 1}
           />
         </section>
@@ -72,10 +82,15 @@ export default async function HomePage() {
           ) : (
             <>
               <p className="panel-note">
-                The newest additions across every category.
+                The newest additions across every board.
               </p>
               {(resources ?? []).map((r) => (
-                <ResourceRow key={r.id} resource={r as unknown as Resource} />
+                <ResourceRow
+                  key={r.id}
+                  resource={r as unknown as Resource}
+                  meId={franchisee.id}
+                  saved={savedResourceIds.has(r.id)}
+                />
               ))}
             </>
           )}

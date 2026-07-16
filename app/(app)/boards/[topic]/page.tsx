@@ -22,12 +22,12 @@ export default async function BoardPage({
 
   if (!board) notFound();
 
-  const [{ data: posts }, { data: rosterCount }, { data: resources }] =
+  const [{ data: posts }, { data: rosterCount }, { data: resources }, { data: saves }] =
     await Promise.all([
       supabase
         .from("posts")
         .select(
-          "id, title, body, media_url, media_type, requires_action, created_at, topics(name), reactions(franchisee_id, emoji)"
+          "id, title, body, media_url, media_type, requires_action, created_at, topics(name), reactions(franchisee_id, emoji, franchisees(location_name, email))"
         )
         .eq("topic_id", board.id)
         .order("created_at", { ascending: false }),
@@ -37,7 +37,15 @@ export default async function BoardPage({
         .select("id, title, type, url, updated_at, topics(name)")
         .eq("topic_id", board.id)
         .order("updated_at", { ascending: false }),
+      supabase.from("saves").select("post_id, resource_id"),
     ]);
+
+  const savedPostIds = (saves ?? [])
+    .map((s) => s.post_id)
+    .filter(Boolean) as string[];
+  const savedResourceIds = new Set(
+    (saves ?? []).map((s) => s.resource_id).filter(Boolean)
+  );
 
   return (
     <>
@@ -60,6 +68,8 @@ export default async function BoardPage({
           <Feed
             posts={(posts ?? []) as unknown as FeedPost[]}
             meId={franchisee.id}
+            isAdmin={franchisee.role === "admin"}
+            savedPostIds={savedPostIds}
             rosterCount={rosterCount ?? 1}
           />
         </section>
@@ -76,6 +86,8 @@ export default async function BoardPage({
                 key={r.id}
                 resource={r as unknown as Resource}
                 showCategory={false}
+                meId={franchisee.id}
+                saved={savedResourceIds.has(r.id)}
               />
             ))
           )}

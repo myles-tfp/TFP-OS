@@ -306,6 +306,41 @@ a { color: inherit; }
   padding: 2px 8px; margin-left: auto; flex-shrink: 0;
 }
 
+/* hover actions: save / edit / delete */
+.post-actions {
+  margin-left: auto; display: inline-flex; gap: 4px; align-items: center;
+  opacity: 0; transition: opacity .15s;
+}
+.tag + .post-actions { margin-left: 8px; }
+.post:hover .post-actions, .post-actions:focus-within { opacity: 1; }
+.icon-btn {
+  background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+  border-radius: 8px; width: 28px; height: 28px; display: inline-flex;
+  align-items: center; justify-content: center; cursor: pointer;
+  color: var(--flapjack); font-size: 14px; text-decoration: none;
+  transition: all .15s; line-height: 1; padding: 0;
+}
+.icon-btn:hover { border-color: var(--dillball); color: var(--dillball); }
+.icon-btn.on { color: var(--dillball); border-color: rgba(190, 229, 21, .4); }
+.icon-btn.danger:hover { border-color: var(--bodybag); color: var(--bodybag); }
+.res .res-save { margin-left: 10px; opacity: 0; flex-shrink: 0; }
+.res:hover .res-save, .res .res-save.on { opacity: 1; }
+
+/* who-reacted tooltip (admins) */
+.react-wrap { position: relative; display: inline-flex; }
+.who-tip {
+  position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translateX(-50%); z-index: 20;
+  background: var(--erne-hi); color: var(--baseline);
+  border: 1px solid rgba(190, 229, 21, .3); border-radius: 8px;
+  padding: 7px 11px; font-size: 11.5px; line-height: 1.5;
+  white-space: nowrap; max-width: 320px; overflow: hidden;
+  text-overflow: ellipsis; pointer-events: none;
+  opacity: 0; transition: opacity .12s;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .4);
+}
+.react-wrap:hover .who-tip { opacity: 1; }
+
 /* nav "coming soon" state */
 .nav-item.soon { opacity: .45; cursor: default; }
 .nav-item.soon:hover { background: none; color: #e6ece9; }
