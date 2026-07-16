@@ -2,39 +2,13 @@ import Image from "next/image";
 import { NavItem } from "@/components/nav-item";
 import type { Franchisee } from "@/lib/types";
 
-/**
- * Nav structure. "This Week" and "Manage" are fixed app sections; the
- * "Resources" group will be driven by resource_categories rows once the
- * library ships (categories are data, not code).
- */
-const NAV_GROUPS: {
-  label: string;
-  items: { name: string; href: string | null }[];
-  adminOnly?: boolean;
-}[] = [
-  {
-    label: "This Week",
-    items: [
-      { name: "Home", href: "/" },
-      { name: "Announcements", href: null }, // ships with the feed filters
-    ],
-  },
-  {
-    label: "Resources",
-    items: [
-      { name: "Marketing", href: null }, // ships with the resource library
-      { name: "Playbooks", href: null },
-      { name: "AI Assistant", href: null }, // phase 2
-    ],
-  },
-  {
-    label: "Manage",
-    adminOnly: true,
-    items: [{ name: "Admin", href: "/admin" }],
-  },
-];
-
-export function Sidebar({ franchisee }: { franchisee: Franchisee }) {
+export function Sidebar({
+  franchisee,
+  categories,
+}: {
+  franchisee: Franchisee;
+  categories: { id: string; name: string }[];
+}) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -47,15 +21,25 @@ export function Sidebar({ franchisee }: { franchisee: Franchisee }) {
         />
       </div>
 
-      {NAV_GROUPS.filter((g) => !g.adminOnly || franchisee.role === "admin").map(
-        (group) => (
-          <div className="nav-group" key={group.label}>
-            <p className="nav-label">{group.label}</p>
-            {group.items.map((item) => (
-              <NavItem key={item.name} name={item.name} href={item.href} />
-            ))}
-          </div>
-        )
+      <div className="nav-group">
+        <p className="nav-label">This Week</p>
+        <NavItem name="Home" href="/" />
+        <NavItem name="Announcements" href={null} />
+      </div>
+
+      <div className="nav-group">
+        <p className="nav-label">Resources</p>
+        {categories.map((cat) => (
+          <NavItem key={cat.id} name={cat.name} href={`/resources/${cat.id}`} />
+        ))}
+        <NavItem name="AI Assistant" href={null} />
+      </div>
+
+      {franchisee.role === "admin" && (
+        <div className="nav-group">
+          <p className="nav-label">Manage</p>
+          <NavItem name="Admin" href="/admin" />
+        </div>
       )}
 
       <div className="sidebar-foot">

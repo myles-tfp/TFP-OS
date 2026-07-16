@@ -58,3 +58,56 @@ export async function createPost(formData: FormData) {
   revalidatePath("/");
   redirect("/?posted=1");
 }
+
+export async function createResource(formData: FormData) {
+  const franchisee = await getFranchisee();
+  if (franchisee.role !== "admin") redirect("/");
+
+  const supabase = await createClient();
+
+  const title = String(formData.get("title") ?? "").trim();
+  const url = String(formData.get("url") ?? "").trim();
+  const categoryId = String(formData.get("category_id") ?? "");
+  const type = String(formData.get("type") ?? "link");
+  if (!title || !url || !categoryId) redirect("/admin?error=missing");
+
+  const { error } = await supabase.from("resources").insert({
+    category_id: categoryId,
+    title,
+    type,
+    url,
+  });
+
+  if (error) redirect(`/admin?error=${encodeURIComponent(error.message)}`);
+
+  revalidatePath("/");
+  revalidatePath(`/resources/${categoryId}`);
+  redirect(`/resources/${categoryId}`);
+}
+
+export async function createCategory(formData: FormData) {
+  const franchisee = await getFranchisee();
+  if (franchisee.role !== "admin") redirect("/");
+
+  const supabase = await createClient();
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) redirect("/admin?error=missing");
+
+  const { data: last } = await supabase
+    .from("resource_categories")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { error } = await supabase.from("resource_categories").insert({
+    name,
+    sort_order: (last?.sort_order ?? 0) + 1,
+  });
+
+  if (error) redirect(`/admin?error=${encodeURIComponent(error.message)}`);
+
+  revalidatePath("/", "layout");
+  redirect("/admin");
+}
