@@ -88,6 +88,7 @@ export default async function BoardPage({
                 showCategory={false}
                 meId={franchisee.id}
                 saved={savedResourceIds.has(r.id)}
+                isAdmin={franchisee.role === "admin"}
               />
             ))
           )}

@@ -82,6 +82,7 @@ export default async function SavedPage() {
                 resource={r as unknown as Resource}
                 meId={franchisee.id}
                 saved
+                isAdmin={franchisee.role === "admin"}
               />
             ))
           )}

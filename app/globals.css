@@ -323,8 +323,32 @@ a { color: inherit; }
 .icon-btn:hover { border-color: var(--dillball); color: var(--dillball); }
 .icon-btn.on { color: var(--dillball); border-color: rgba(190, 229, 21, .4); }
 .icon-btn.danger:hover { border-color: var(--bodybag); color: var(--bodybag); }
-.res .res-save { margin-left: 10px; opacity: 0; flex-shrink: 0; }
-.res:hover .res-save, .res .res-save.on { opacity: 1; }
+.res-actions {
+  margin-left: 10px; display: inline-flex; gap: 4px; align-items: center;
+  opacity: 0; transition: opacity .15s; flex-shrink: 0;
+}
+.res:hover .res-actions, .res-actions:focus-within { opacity: 1; }
+
+/* confirm modal */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(4, 16, 28, .7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.modal-card {
+  background: var(--erne); border: 1px solid var(--line);
+  border-radius: 16px; padding: 26px 28px; max-width: 400px; width: 100%;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+}
+.modal-card h3 { font-size: 24px; margin-bottom: 8px; }
+.modal-card p {
+  font-size: 13px; color: var(--flapjack); font-weight: 300;
+  line-height: 1.6; margin-bottom: 20px;
+}
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.btn.danger { background: var(--bodybag); color: #fff; }
 
 /* who-reacted tooltip (admins) */
 .react-wrap { position: relative; display: inline-flex; }

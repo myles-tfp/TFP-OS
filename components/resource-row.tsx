@@ -1,5 +1,5 @@
 import { timeAgo } from "@/lib/format";
-import { SaveButton } from "@/components/save-button";
+import { ResourceActions } from "@/components/resource-actions";
 
 const TYPE_ICONS: Record<string, string> = {
   doc: "📄",
@@ -37,11 +37,13 @@ export function ResourceRow({
   showCategory = true,
   meId,
   saved,
+  isAdmin = false,
 }: {
   resource: Resource;
   showCategory?: boolean;
   meId?: string;
   saved?: boolean;
+  isAdmin?: boolean;
 }) {
   return (
     <a className="res" href={resource.url} target="_blank" rel="noreferrer">
@@ -57,11 +59,12 @@ export function ResourceRow({
         <span className="cat-pill">{resource.topics.name}</span>
       )}
       {meId && (
-        <SaveButton
-          meId={meId}
+        <ResourceActions
           resourceId={resource.id}
+          resourceTitle={resource.title}
+          meId={meId}
           saved={!!saved}
-          className="res-save"
+          isAdmin={isAdmin}
         />
       )}
     </a>

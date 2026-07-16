@@ -90,6 +90,7 @@ export default async function HomePage() {
                   resource={r as unknown as Resource}
                   meId={franchisee.id}
                   saved={savedResourceIds.has(r.id)}
+                  isAdmin={franchisee.role === "admin"}
                 />
               ))}
             </>
