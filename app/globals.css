@@ -433,6 +433,30 @@ a { color: inherit; }
 .read-stat strong { color: var(--dillball); }
 .read-waiting { color: var(--backcourt); }
 
+/* resource collection cards */
+.res-group {
+  border: 1px solid var(--line); border-radius: 12px;
+  margin-bottom: 10px; background: rgba(255, 255, 255, .02);
+}
+.res-group summary {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; cursor: pointer; list-style: none;
+  font-family: var(--font-heading); font-size: 17px; letter-spacing: .03em;
+}
+.res-group summary::-webkit-details-marker { display: none; }
+.res-group summary::before {
+  content: "▸"; color: var(--backcourt); font-size: 12px;
+  transition: transform .15s; font-family: var(--font-body);
+}
+.res-group[open] summary::before { transform: rotate(90deg); }
+.res-group summary:hover { background: rgba(255, 255, 255, .04); }
+.res-group-count {
+  margin-left: auto; font-family: var(--font-body); font-size: 11px;
+  color: var(--backcourt); border: 1px solid var(--line);
+  border-radius: 20px; padding: 2px 9px;
+}
+.res-group-body { padding: 2px 14px 10px; border-top: 1px solid var(--line); }
+
 /* ============================================================
    BOARDS — Monday-style phases + tasks
    ============================================================ */

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { COLLECTIONS } from "@/lib/collections";
 
 type Topic = { id: string; name: string };
 
@@ -30,6 +31,7 @@ export function ResourceForm({ topics }: { topics: Topic[] }) {
   const [topicId, setTopicId] = useState(topics[0]?.id ?? "");
   const [title, setTitle] = useState("");
   const [type, setType] = useState("doc");
+  const [collection, setCollection] = useState("");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -79,6 +81,7 @@ export function ResourceForm({ topics }: { topics: Topic[] }) {
               title: title.trim(),
               topic_id: topicId,
               type: finalType,
+              collection: collection || null,
               updated_at: new Date().toISOString(),
             })
             .eq("id", existing.id);
@@ -93,6 +96,7 @@ export function ResourceForm({ topics }: { topics: Topic[] }) {
           title: title.trim(),
           type: finalType,
           url: finalUrl,
+          collection: collection || null,
         });
         if (insErr) throw new Error(insErr.message);
       }
@@ -133,6 +137,21 @@ export function ResourceForm({ topics }: { topics: Topic[] }) {
           {topics.map((t) => (
             <option key={t.id} value={t.id}>
               {t.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="field">
+        <label htmlFor="r-collection">Collection (groups resources into cards)</label>
+        <select
+          id="r-collection"
+          value={collection}
+          onChange={(e) => setCollection(e.target.value)}
+        >
+          <option value="">— none —</option>
+          {COLLECTIONS.map(([key, label]) => (
+            <option key={key} value={key}>
+              {label}
             </option>
           ))}
         </select>
