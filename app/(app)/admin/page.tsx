@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getFranchisee } from "@/lib/get-franchisee";
@@ -6,6 +7,7 @@ import { PostComposer } from "@/components/post-composer";
 import { ResourceForm } from "@/components/resource-form";
 import { RosterManager } from "@/components/roster-manager";
 import { timeAgo } from "@/lib/format";
+import { currentPhase, phaseProgress, type BoardPhase } from "@/lib/board";
 import type { Franchisee } from "@/lib/types";
 
 export default async function AdminPage({
@@ -19,7 +21,7 @@ export default async function AdminPage({
   const { error } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: topics }, { data: roster }, { data: recentPosts }] =
+  const [{ data: topics }, { data: roster }, { data: recentPosts }, { data: allPhases }] =
     await Promise.all([
       supabase.from("topics").select("id, name, status").order("sort_order"),
       supabase
@@ -31,10 +33,24 @@ export default async function AdminPage({
         .select("id, title, body, created_at, reactions(franchisee_id)")
         .order("created_at", { ascending: false })
         .limit(8),
+      supabase
+        .from("phases")
+        .select("id, franchisee_id, name, tag, sort_order, tasks(id, phase_id, title, owner, status, due_date, sort_order)")
+        .not("franchisee_id", "is", null)
+        .order("sort_order"),
     ]);
 
   const liveTopics = (topics ?? []).filter((t) => t.status === "live");
   const activeRoster = (roster ?? []).filter((f) => f.status === "active");
+
+  // group phases per franchisee for the locations overview
+  const boardsByFranchisee = new Map<string, BoardPhase[]>();
+  for (const p of (allPhases ?? []) as unknown as BoardPhase[]) {
+    if (!p.franchisee_id) continue;
+    const list = boardsByFranchisee.get(p.franchisee_id) ?? [];
+    list.push(p);
+    boardsByFranchisee.set(p.franchisee_id, list);
+  }
 
   return (
     <>
@@ -51,6 +67,46 @@ export default async function AdminPage({
           {error === "missing" ? "required fields are missing." : error}
         </div>
       )}
+
+      <section className="panel" style={{ marginBottom: 22 }}>
+        <div className="panel-head">
+          <h2>Locations</h2>
+          <Link href="/admin/boards/template" className="link" style={{ fontSize: 12, color: "var(--dillball)" }}>
+            Edit template board
+          </Link>
+        </div>
+        <p className="panel-note">
+          Where every location stands — click a card to open its full board.
+        </p>
+        <div className="loc-grid">
+          {activeRoster.map((f) => {
+            const board = boardsByFranchisee.get(f.id) ?? [];
+            const allTasks = board.flatMap((p) => p.tasks);
+            const pct = phaseProgress(allTasks);
+            const phase = currentPhase(board);
+            return (
+              <Link href={`/admin/boards/${f.id}`} className="loc-card" key={f.id}>
+                <div className="t">{f.location_name || f.email}</div>
+                <div className="m">{phase ? phase.name : "No board yet"}</div>
+                <div className="phase-bar">
+                  <div className="phase-bar-fill" style={{ width: `${pct}%` }} />
+                </div>
+                <div className="loc-stats">
+                  <span>{pct}% complete</span>
+                  <span>
+                    ⭐ {f.founding_members ?? 0}/{f.founding_goal ?? 100}
+                  </span>
+                  <span>
+                    {f.grand_opening
+                      ? `GO ${new Date(f.grand_opening + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })}`
+                      : "GO tbd"}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
 
       <div className="cols" style={{ alignItems: "start", marginBottom: 22 }}>
         <section className="panel">

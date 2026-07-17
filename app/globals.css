@@ -434,6 +434,79 @@ a { color: inherit; }
 .read-waiting { color: var(--backcourt); }
 
 /* ============================================================
+   BOARDS — Monday-style phases + tasks
+   ============================================================ */
+.board { display: flex; flex-direction: column; gap: 10px; }
+.phase {
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+  background: rgba(255, 255, 255, .02);
+}
+.phase-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; cursor: pointer; user-select: none;
+}
+.phase-head:hover { background: rgba(255, 255, 255, .04); }
+.phase-head h3 { font-size: 18px; letter-spacing: .03em; }
+.phase-head .chev { color: var(--backcourt); transition: transform .15s; font-size: 12px; }
+.phase-head .chev.open { transform: rotate(90deg); }
+.phase-count { font-size: 11px; color: var(--backcourt); margin-left: 4px; white-space: nowrap; }
+.phase-bar {
+  flex: 1; max-width: 160px; height: 8px; border-radius: 6px;
+  background: rgba(255, 255, 255, .08); overflow: hidden; min-width: 60px;
+}
+.phase-bar-fill { height: 100%; background: var(--dillball); border-radius: 6px; transition: width .3s; }
+.phase-body { border-top: 1px solid var(--line); padding: 6px 14px 12px; }
+.task-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-top: 1px solid rgba(255, 255, 255, .05);
+}
+.task-row:first-child { border-top: none; }
+.task-row input[type="checkbox"] { accent-color: var(--dillball); width: 15px; height: 15px; flex-shrink: 0; }
+.task-row.done .task-title { text-decoration: line-through; color: var(--backcourt); }
+.task-title { flex: 1; font-size: 13px; min-width: 0; }
+.task-owner, .task-status, .task-due {
+  background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+  border-radius: 8px; padding: 5px 8px; color: var(--flapjack);
+  font-family: var(--font-body); font-size: 11.5px; outline: none;
+}
+.task-owner-label, .task-due-label { font-size: 11px; color: var(--backcourt); white-space: nowrap; }
+.task-due { color-scheme: dark; }
+.add-item {
+  background: none; border: none; color: var(--backcourt);
+  font-family: var(--font-body); font-size: 12.5px; cursor: pointer;
+  padding: 8px 0 2px; text-align: left;
+}
+.add-item:hover { color: var(--dillball); }
+
+.board-meta { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+.board-meta label {
+  display: flex; flex-direction: column; gap: 5px;
+  font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--backcourt);
+}
+.board-meta input {
+  background: var(--erne); border: 1px solid var(--line); border-radius: 9px;
+  padding: 9px 12px; color: var(--baseline); font-family: var(--font-body);
+  font-size: 13px; outline: none; color-scheme: dark; width: 160px;
+}
+.board-meta input:focus { border-color: var(--dillball); }
+
+.loc-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.loc-card {
+  display: block; text-decoration: none; color: inherit;
+  background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px 16px; transition: border-color .15s;
+}
+.loc-card:hover { border-color: var(--dillball); }
+.loc-card .t { font-size: 14px; font-weight: 600; }
+.loc-card .m { font-size: 11.5px; color: var(--backcourt); margin: 3px 0 10px; }
+.loc-card .phase-bar { max-width: none; margin-bottom: 8px; }
+.loc-stats { display: flex; justify-content: space-between; gap: 8px; font-size: 10.5px; color: var(--backcourt); flex-wrap: wrap; }
+
+/* ============================================================
    RALLY — the TFP assistant
    ============================================================ */
 .rally-blink { transform-origin: center; animation: rally-blink 4.2s ease-in-out infinite; }

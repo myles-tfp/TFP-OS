@@ -8,4 +8,6 @@ export interface Franchisee {
   status: "active" | "inactive";
   created_at: string;
   founding_members?: number | null;
+  founding_goal?: number;
+  grand_opening?: string | null;
 }
