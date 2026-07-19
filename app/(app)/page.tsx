@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getFranchisee } from "@/lib/get-franchisee";
 import { Feed, type FeedPost } from "@/components/feed";
 import { ResourceRow, type Resource } from "@/components/resource-row";
+import { currentPhase, type BoardPhase } from "@/lib/board";
 
 export default async function HomePage() {
   const franchisee = await getFranchisee();
@@ -15,6 +16,7 @@ export default async function HomePage() {
     { data: resources },
     { data: saves },
     { count: newResourceCount },
+    { data: myPhases },
   ] = await Promise.all([
     supabase
       .from("posts")
@@ -34,6 +36,11 @@ export default async function HomePage() {
       .from("resources")
       .select("id", { count: "exact", head: true })
       .gte("updated_at", weekAgo),
+    supabase
+      .from("phases")
+      .select("id, franchisee_id, name, tag, sort_order, tasks(id, phase_id, title, owner, status, due_date, sort_order)")
+      .eq("franchisee_id", franchisee.id)
+      .order("sort_order"),
   ]);
 
   const savedPostIds = (saves ?? [])
@@ -49,13 +56,21 @@ export default async function HomePage() {
   );
   const banner = unread.find((p) => p.requires_action) ?? null;
 
-  const monthsIn = Math.min(
-    6,
-    Math.floor(
-      (Date.now() - new Date(franchisee.created_at).getTime()) /
-        (30.44 * 24 * 3600 * 1000)
-    ) + 1
-  );
+  // real phase from their board + countdown to grand opening
+  const phase = currentPhase((myPhases ?? []) as unknown as BoardPhase[]);
+  const phaseShort = phase ? phase.name.split("—")[0].trim() : "—";
+
+  let goCountdown = "grand opening date TBD";
+  if (franchisee.grand_opening) {
+    const days = Math.ceil(
+      (new Date(franchisee.grand_opening + "T00:00:00").getTime() - Date.now()) /
+        (24 * 3600 * 1000)
+    );
+    if (days < 0) goCountdown = "grand opening complete 🎉";
+    else if (days === 0) goCountdown = "grand opening is TODAY 🎉";
+    else if (days <= 45) goCountdown = `${days} days to grand open`;
+    else goCountdown = `${Math.round(days / 30.44)} months to grand open`;
+  }
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -79,14 +94,16 @@ export default async function HomePage() {
 
       <section className="stats">
         <div className="stat accent">
-          <div className="k">Onboarding</div>
-          <div className="v">Month {monthsIn}</div>
-          <div className="sub">of your 6-month plan</div>
+          <div className="k">Your phase</div>
+          <div className="v" style={{ fontSize: phaseShort.length > 10 ? 28 : 40 }}>
+            {phaseShort}
+          </div>
+          <div className="sub">{goCountdown}</div>
         </div>
         <div className="stat">
           <div className="k">Founding members</div>
           <div className="v">{franchisee.founding_members ?? "—"}</div>
-          <div className="sub">goal: 100 by launch</div>
+          <div className="sub">goal: {franchisee.founding_goal ?? 100} by launch</div>
         </div>
         <div className="stat">
           <div className="k">New resources</div>

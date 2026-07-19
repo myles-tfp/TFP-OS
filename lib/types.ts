@@ -10,4 +10,5 @@ export interface Franchisee {
   founding_members?: number | null;
   founding_goal?: number;
   grand_opening?: string | null;
+  notifications_seen_at?: string;
 }
