@@ -570,14 +570,10 @@ a { color: inherit; }
 .bell-text .b { font-size: 12px; color: var(--flapjack); font-weight: 300; }
 .bell-text .w { font-size: 10.5px; color: var(--backcourt); }
 
-/* Rally result links */
-.rally-links { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-.rally-links a {
-  color: var(--dillball); font-size: 12.5px; text-decoration: none;
-  border: 1px solid rgba(190, 229, 21, .25); border-radius: 8px;
-  padding: 7px 10px; transition: border-color .15s;
-}
-.rally-links a:hover { border-color: var(--dillball); }
+/* Rally links + thinking state */
+.rally-inline-link { color: var(--dillball); text-decoration: underline; text-underline-offset: 2px; }
+.rally-thinking { opacity: .6; font-style: italic; }
+.rally-msg { white-space: pre-wrap; }
 
 /* ============================================================
    RALLY — the TFP assistant
