@@ -118,11 +118,18 @@ export function BoardEditor({
     <div className="board">
       {error && <div className="auth-error">{error}</div>}
 
-      {phases.map((phase) => {
+      {phases.map((phase, idx) => {
         const pct = phaseProgress(phase.tasks);
         const open = openPhases.has(phase.id);
+        const firstMarketing =
+          phase.tag === "marketing" &&
+          (idx === 0 || phases[idx - 1].tag !== "marketing");
         return (
-          <section className="phase" key={phase.id}>
+          <section className="phase-wrap" key={phase.id}>
+          {firstMarketing && (
+            <div className="board-divider">6-Month Marketing Plan</div>
+          )}
+          <section className="phase">
             <header className="phase-head" onClick={() => togglePhase(phase.id)}>
               <span className={`chev${open ? " open" : ""}`}>▸</span>
               <h3>{phase.name}</h3>
@@ -237,6 +244,7 @@ export function BoardEditor({
                 )}
               </div>
             )}
+          </section>
           </section>
         );
       })}

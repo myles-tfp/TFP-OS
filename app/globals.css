@@ -472,6 +472,15 @@ a { color: inherit; }
    BOARDS — Monday-style phases + tasks
    ============================================================ */
 .board { display: flex; flex-direction: column; gap: 10px; }
+.phase-wrap { display: contents; }
+.board-divider {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--font-heading); font-size: 19px; letter-spacing: .05em;
+  color: var(--dillball); margin: 14px 0 2px;
+}
+.board-divider::before, .board-divider::after {
+  content: ""; flex: 1; height: 1px; background: rgba(190, 229, 21, .25);
+}
 .phase {
   border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
   background: rgba(255, 255, 255, .02);
