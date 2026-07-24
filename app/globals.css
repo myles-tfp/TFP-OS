@@ -101,10 +101,21 @@ a { color: inherit; }
 
 .brand {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   padding: 4px 6px 22px;
   border-bottom: 1px solid rgba(255, 255, 255, .12);
   margin-bottom: 20px;
+}
+.os-tag {
+  font-family: var(--font-body);
+  font-size: 8.5px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--backcourt);
+  margin-top: 9px;
+  text-align: center;
 }
 .brand img {
   width: 150px;
@@ -659,11 +670,35 @@ a { color: inherit; }
   border-right: 1px solid var(--line); background: rgba(255, 255, 255, .02);
   overflow-y: auto; display: flex; flex-direction: column;
 }
-.chat-loc {
+.chat-search {
   width: 100%; background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
-  border-radius: 8px; padding: 7px 8px; color: var(--baseline);
+  border-radius: 8px; padding: 7px 9px; color: var(--baseline);
   font-family: var(--font-body); font-size: 11.5px; margin-bottom: 10px; outline: none;
 }
+.chat-search:focus { border-color: var(--dillball); }
+.chat-loc-head {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  background: none; border: none; text-align: left; cursor: pointer;
+  font-family: var(--font-body); font-size: 11px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--flapjack);
+  padding: 8px 6px 5px; margin-top: 4px;
+}
+.chat-loc-head:hover { color: #fff; }
+.chat-loc-head .chev { color: var(--backcourt); font-size: 10px; transition: transform .15s; }
+.chat-loc-head .chev.open { transform: rotate(90deg); }
+.chat-hit {
+  display: flex; flex-direction: column; gap: 3px; text-align: left;
+  background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 12px; cursor: pointer;
+  font-family: var(--font-body); color: inherit;
+}
+.chat-hit:hover { border-color: var(--dillball); }
+.chat-hit .m { font-size: 10.5px; color: var(--backcourt); }
+.chat-hit .b { font-size: 12.5px; color: var(--flapjack); }
+
+/* Rally scoots to the left while chat is open */
+body.chat-open .rally-bubble { right: auto; left: 26px; }
+body.chat-open .rally-panel { right: auto; left: 26px; }
 .chat-chan {
   display: flex; justify-content: space-between; align-items: center; gap: 6px;
   width: 100%; text-align: left; background: none; border: none;

@@ -24,10 +24,23 @@ type ChatMessage = {
   chat_reactions: { franchisee_id: string; emoji: string }[];
 };
 
-type Channel = { id: string; name: string; sort_order: number };
-type Loc = { id: string; name: string };
+type Channel = {
+  id: string;
+  name: string;
+  sort_order: number;
+  location_id: string;
+  locations: { name: string } | null;
+};
 
-export function ChatNavItem() {
+type SearchHit = {
+  id: string;
+  body: string;
+  channel_id: string;
+  created_at: string;
+  chat_channels: { name: string; locations: { name: string } | null } | null;
+};
+
+export function ChatNavItem({ unread }: { unread: number }) {
   return (
     <button
       type="button"
@@ -36,11 +49,15 @@ export function ChatNavItem() {
     >
       <span className="dot" />
       Chat
+      {unread > 0 && (
+        <span className="chat-unread" style={{ marginLeft: "auto" }}>
+          {unread > 99 ? "99+" : unread}
+        </span>
+      )}
     </button>
   );
 }
 
-/** Render @mentions in lime. */
 function renderBody(text: string) {
   return text.split(/(@[\w.-]+)/g).map((part, i) =>
     part.startsWith("@") ? (
@@ -56,23 +73,21 @@ export function ChatPanel({
   isAdmin,
   canManage,
   myLocationId,
-  locations,
 }: {
   meId: string;
   isAdmin: boolean;
   canManage: boolean;
   myLocationId: string | null;
-  locations: Loc[];
 }) {
   const [open, setOpen] = useState(false);
-  const [locationId, setLocationId] = useState<string | null>(
-    myLocationId ?? locations[0]?.id ?? null
-  );
   const [channels, setChannels] = useState<Channel[]>([]);
+  const [openLocs, setOpenLocs] = useState<Set<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unread, setUnread] = useState<Record<string, number>>({});
   const [draft, setDraft] = useState("");
+  const [q, setQ] = useState("");
+  const [hits, setHits] = useState<SearchHit[] | null>(null);
   const [busy, setBusy] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<string | null>(null);
@@ -80,45 +95,49 @@ export function ChatPanel({
 
   const supabase = createClient();
 
-  const loadChannels = useCallback(
-    async (locId: string) => {
-      const [{ data: chans }, { data: reads }] = await Promise.all([
-        supabase
-          .from("chat_channels")
-          .select("id, name, sort_order")
-          .eq("location_id", locId)
-          .order("sort_order"),
-        supabase.from("chat_reads").select("channel_id, last_read_at"),
-      ]);
-      const list = (chans ?? []) as Channel[];
-      setChannels(list);
-      if (list.length > 0 && !list.some((c) => c.id === activeRef.current)) {
-        setActiveId(list[0].id);
-      }
+  const loadChannels = useCallback(async () => {
+    const [{ data: chans }, { data: reads }] = await Promise.all([
+      supabase
+        .from("chat_channels")
+        .select("id, name, sort_order, location_id, locations(name)")
+        .order("sort_order"),
+      supabase.from("chat_reads").select("channel_id, last_read_at"),
+    ]);
+    const list = (chans ?? []) as unknown as Channel[];
+    setChannels(list);
+    if (list.length > 0 && !list.some((c) => c.id === activeRef.current)) {
+      const preferred = myLocationId
+        ? list.find((c) => c.location_id === myLocationId)
+        : list[0];
+      setActiveId((preferred ?? list[0]).id);
+    }
+    setOpenLocs((prev) => {
+      if (prev.size > 0) return prev;
+      const first = myLocationId ?? list[0]?.location_id;
+      return first ? new Set([first]) : prev;
+    });
 
-      if (list.length > 0) {
-        const readMap = new Map(
-          (reads ?? []).map((r) => [r.channel_id, r.last_read_at])
-        );
-        const { data: recent } = await supabase
-          .from("chat_messages")
-          .select("channel_id, created_at, author_id")
-          .in("channel_id", list.map((c) => c.id))
-          .order("created_at", { ascending: false })
-          .limit(200);
-        const counts: Record<string, number> = {};
-        for (const m of recent ?? []) {
-          if (m.author_id === meId) continue;
-          const seen = readMap.get(m.channel_id);
-          if (!seen || new Date(m.created_at) > new Date(seen)) {
-            counts[m.channel_id] = (counts[m.channel_id] ?? 0) + 1;
-          }
+    if (list.length > 0) {
+      const readMap = new Map(
+        (reads ?? []).map((r) => [r.channel_id, r.last_read_at])
+      );
+      const { data: recent } = await supabase
+        .from("chat_messages")
+        .select("channel_id, created_at, author_id")
+        .in("channel_id", list.map((c) => c.id))
+        .order("created_at", { ascending: false })
+        .limit(500);
+      const counts: Record<string, number> = {};
+      for (const m of recent ?? []) {
+        if (m.author_id === meId) continue;
+        const seen = readMap.get(m.channel_id);
+        if (!seen || new Date(m.created_at) > new Date(seen)) {
+          counts[m.channel_id] = (counts[m.channel_id] ?? 0) + 1;
         }
-        setUnread(counts);
       }
-    },
-    [supabase, meId]
-  );
+      setUnread(counts);
+    }
+  }, [supabase, meId, myLocationId]);
 
   const loadMessages = useCallback(
     async (channelId: string) => {
@@ -148,9 +167,15 @@ export function ChatPanel({
     return () => window.removeEventListener("chat:toggle", toggle);
   }, []);
 
+  // Rally politely scoots left while chat is open
   useEffect(() => {
-    if (open && locationId) void loadChannels(locationId);
-  }, [open, locationId, loadChannels]);
+    document.body.classList.toggle("chat-open", open);
+    return () => document.body.classList.remove("chat-open");
+  }, [open]);
+
+  useEffect(() => {
+    if (open) void loadChannels();
+  }, [open, loadChannels]);
 
   useEffect(() => {
     if (open && activeId) void loadMessages(activeId);
@@ -160,14 +185,34 @@ export function ChatPanel({
     if (!open) return;
     const t = window.setInterval(() => {
       if (activeRef.current) void loadMessages(activeRef.current);
-      if (locationId) void loadChannels(locationId);
+      void loadChannels();
     }, 12000);
     return () => window.clearInterval(t);
-  }, [open, locationId, loadMessages, loadChannels]);
+  }, [open, loadMessages, loadChannels]);
 
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight });
   }, [messages, open]);
+
+  // keyword search across accessible messages
+  useEffect(() => {
+    if (!open) return;
+    const term = q.trim();
+    if (term.length < 2) {
+      setHits(null);
+      return;
+    }
+    const t = window.setTimeout(async () => {
+      const { data } = await supabase
+        .from("chat_messages")
+        .select("id, body, channel_id, created_at, chat_channels(name, locations(name))")
+        .ilike("body", `%${term}%`)
+        .order("created_at", { ascending: false })
+        .limit(15);
+      setHits((data ?? []) as unknown as SearchHit[]);
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, [q, open, supabase]);
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,63 +248,130 @@ export function ChatPanel({
     if (activeId) void loadMessages(activeId);
   };
 
-  const addChannel = async () => {
+  const addChannel = async (locationId: string) => {
     const name = window.prompt("Channel name (e.g. construction):");
-    if (!name?.trim() || !locationId) return;
+    if (!name?.trim()) return;
     const clean = name.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-");
-    const maxOrder = Math.max(0, ...channels.map((c) => c.sort_order));
+    const siblings = channels.filter((c) => c.location_id === locationId);
+    const maxOrder = Math.max(0, ...siblings.map((c) => c.sort_order));
     const { error } = await supabase.from("chat_channels").insert({
       location_id: locationId,
       name: clean,
       sort_order: maxOrder + 1,
     });
     if (error) window.alert(`Couldn't create: ${error.message}`);
-    void loadChannels(locationId);
+    void loadChannels();
   };
 
+  const toggleLoc = (id: string) => {
+    setOpenLocs((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  };
+
+  const term = q.trim().toLowerCase();
+
+  // group channels by location for the rail
+  const groups = new Map<string, { name: string; channels: Channel[] }>();
+  for (const c of channels) {
+    const g = groups.get(c.location_id) ?? {
+      name: c.locations?.name ?? "Location",
+      channels: [],
+    };
+    g.channels.push(c);
+    groups.set(c.location_id, g);
+  }
+
+  const visibleGroups = [...groups.entries()].filter(([, g]) => {
+    if (!term) return true;
+    return (
+      g.name.toLowerCase().includes(term) ||
+      g.channels.some((c) => c.name.toLowerCase().includes(term))
+    );
+  });
+
   const active = channels.find((c) => c.id === activeId);
+  const locUnread = (locId: string) =>
+    channels
+      .filter((c) => c.location_id === locId)
+      .reduce((sum, c) => sum + (unread[c.id] ?? 0), 0);
 
   return (
     <aside className={`chat-panel${open ? " open" : ""}`} aria-hidden={!open}>
       <div className="chat-rail">
-        {isAdmin && locations.length > 0 && (
-          <select
-            className="chat-loc"
-            value={locationId ?? ""}
-            onChange={(e) => setLocationId(e.target.value)}
-            title="Location"
-          >
-            {locations.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </select>
-        )}
-        <p className="nav-label" style={{ margin: "4px 0 8px 6px" }}>Channels</p>
-        {channels.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            className={`chat-chan${c.id === activeId ? " on" : ""}`}
-            onClick={() => setActiveId(c.id)}
-          >
-            <span># {c.name}</span>
-            {(unread[c.id] ?? 0) > 0 && (
-              <span className="chat-unread">{unread[c.id]}</span>
-            )}
-          </button>
-        ))}
-        {(canManage || isAdmin) && (
-          <button type="button" className="add-item" onClick={addChannel}>
-            + New channel
-          </button>
-        )}
+        <input
+          className="chat-search"
+          type="text"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Filter or search…"
+          aria-label="Filter channels or search messages"
+        />
+
+        {visibleGroups.map(([locId, g]) => {
+          const expanded = openLocs.has(locId) || !!term;
+          const showChans = term
+            ? g.channels.filter(
+                (c) =>
+                  c.name.toLowerCase().includes(term) ||
+                  g.name.toLowerCase().includes(term)
+              )
+            : g.channels;
+          return (
+            <div key={locId}>
+              {(isAdmin || groups.size > 1) && (
+                <button
+                  type="button"
+                  className="chat-loc-head"
+                  onClick={() => toggleLoc(locId)}
+                >
+                  <span className={`chev${expanded ? " open" : ""}`}>▸</span>
+                  {g.name}
+                  {!expanded && locUnread(locId) > 0 && (
+                    <span className="chat-unread">{locUnread(locId)}</span>
+                  )}
+                </button>
+              )}
+              {(expanded || (!isAdmin && groups.size === 1)) &&
+                showChans.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`chat-chan${c.id === activeId ? " on" : ""}`}
+                    onClick={() => setActiveId(c.id)}
+                  >
+                    <span># {c.name}</span>
+                    {(unread[c.id] ?? 0) > 0 && (
+                      <span className="chat-unread">{unread[c.id]}</span>
+                    )}
+                  </button>
+                ))}
+              {(expanded || (!isAdmin && groups.size === 1)) &&
+                (isAdmin || (canManage && locId === myLocationId)) && (
+                  <button
+                    type="button"
+                    className="add-item"
+                    style={{ paddingLeft: 9 }}
+                    onClick={() => addChannel(locId)}
+                  >
+                    + New channel
+                  </button>
+                )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="chat-main">
         <div className="chat-head">
-          <h2># {active?.name ?? "chat"}</h2>
+          <h2>
+            {active
+              ? `# ${active.name}${isAdmin && active.locations ? ` · ${active.locations.name}` : ""}`
+              : "Chat"}
+          </h2>
           <button
             type="button"
             className="icon-btn"
@@ -271,70 +383,98 @@ export function ChatPanel({
           </button>
         </div>
 
-        <div className="chat-body" ref={bodyRef}>
-          {messages.length === 0 && (
-            <p className="panel-note" style={{ padding: "8px 2px" }}>
-              Nothing here yet — say hi 👋
+        {hits !== null ? (
+          <div className="chat-body">
+            <p className="panel-note" style={{ marginBottom: 4 }}>
+              {hits.length === 0
+                ? `No messages matching “${q.trim()}”`
+                : `Messages matching “${q.trim()}” — click to jump`}
             </p>
-          )}
-          {messages.map((m) => {
-            const a = m.franchisees;
-            const counts: Record<string, { n: number; mine: boolean }> = {};
-            for (const r of m.chat_reactions) {
-              const c = (counts[r.emoji] ??= { n: 0, mine: false });
-              c.n += 1;
-              if (r.franchisee_id === meId) c.mine = true;
-            }
-            return (
-              <div className="chat-msg" key={m.id}>
-                {a?.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img className="chat-avatar" src={a.avatar_url} alt="" />
-                ) : (
-                  <div className="chat-avatar chat-avatar-fallback">
-                    {initials(a?.display_name, a?.email ?? "?")}
-                  </div>
-                )}
-                <div className="chat-msg-body">
-                  <div className="chat-msg-meta">
-                    <span className="n">
-                      {memberTitle(a?.locations?.name, a?.display_name, a?.email ?? "unknown")}
-                    </span>
-                    <span className="t">{timeAgo(m.created_at)}</span>
-                  </div>
-                  <div className="chat-msg-text">{renderBody(m.body)}</div>
-                  <div className="chat-msg-reacts">
-                    {Object.entries(counts).map(([emoji, c]) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        className={`react${c.mine ? " on" : ""}`}
-                        onClick={() => toggleReaction(m.id, emoji, c.mine)}
-                      >
-                        <span>{emoji}</span>
-                        <span className="n">{c.n}</span>
-                      </button>
-                    ))}
-                    <span className="chat-react-add">
-                      {EMOJIS.map((emoji) => (
+            {hits.map((h) => (
+              <button
+                key={h.id}
+                type="button"
+                className="chat-hit"
+                onClick={() => {
+                  setActiveId(h.channel_id);
+                  setQ("");
+                  setHits(null);
+                }}
+              >
+                <span className="m">
+                  {h.chat_channels?.locations?.name ?? ""} · #
+                  {h.chat_channels?.name ?? ""} · {timeAgo(h.created_at)}
+                </span>
+                <span className="b">{h.body.slice(0, 90)}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="chat-body" ref={bodyRef}>
+            {messages.length === 0 && (
+              <p className="panel-note" style={{ padding: "8px 2px" }}>
+                Nothing here yet — say hi 👋
+              </p>
+            )}
+            {messages.map((m) => {
+              const a = m.franchisees;
+              const counts: Record<string, { n: number; mine: boolean }> = {};
+              for (const r of m.chat_reactions) {
+                const c = (counts[r.emoji] ??= { n: 0, mine: false });
+                c.n += 1;
+                if (r.franchisee_id === meId) c.mine = true;
+              }
+              return (
+                <div className="chat-msg" key={m.id}>
+                  {a?.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="chat-avatar" src={a.avatar_url} alt="" />
+                  ) : (
+                    <div className="chat-avatar chat-avatar-fallback">
+                      {initials(a?.display_name, a?.email ?? "?")}
+                    </div>
+                  )}
+                  <div className="chat-msg-body">
+                    <div className="chat-msg-meta">
+                      <span className="n">
+                        {memberTitle(a?.locations?.name, a?.display_name, a?.email ?? "unknown")}
+                      </span>
+                      <span className="t">{timeAgo(m.created_at)}</span>
+                    </div>
+                    <div className="chat-msg-text">{renderBody(m.body)}</div>
+                    <div className="chat-msg-reacts">
+                      {Object.entries(counts).map(([emoji, c]) => (
                         <button
                           key={emoji}
                           type="button"
-                          className="react"
-                          onClick={() =>
-                            toggleReaction(m.id, emoji, !!counts[emoji]?.mine)
-                          }
+                          className={`react${c.mine ? " on" : ""}`}
+                          onClick={() => toggleReaction(m.id, emoji, c.mine)}
                         >
-                          {emoji}
+                          <span>{emoji}</span>
+                          <span className="n">{c.n}</span>
                         </button>
                       ))}
-                    </span>
+                      <span className="chat-react-add">
+                        {EMOJIS.map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            className="react"
+                            onClick={() =>
+                              toggleReaction(m.id, emoji, !!counts[emoji]?.mine)
+                            }
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         <form className="rally-input" onSubmit={send}>
           <input

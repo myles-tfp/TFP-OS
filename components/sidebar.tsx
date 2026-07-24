@@ -13,9 +13,11 @@ export type Topic = {
 export function Sidebar({
   franchisee,
   topics,
+  chatUnread = 0,
 }: {
   franchisee: Franchisee;
   topics: Topic[];
+  chatUnread?: number;
 }) {
   const isAdmin = franchisee.role === "admin";
   const isManager = franchisee.location_role === "manager" && !!franchisee.location_id;
@@ -30,13 +32,14 @@ export function Sidebar({
           height={78}
           priority
         />
+        <div className="os-tag">Operating System v1.0.0</div>
       </div>
 
       <div className="nav-group">
-        <p className="nav-label">This Week</p>
+        <p className="nav-label">Main Hub</p>
         <NavItem name="Home" href="/" />
         <NavItem name="Saved" href="/saved" />
-        <ChatNavItem />
+        <ChatNavItem unread={chatUnread} />
       </div>
 
       <div className="nav-group">
