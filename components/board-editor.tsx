@@ -101,6 +101,12 @@ export function BoardEditor({
     refresh();
   };
 
+  const renameTask = async (task: BoardTask) => {
+    const title = window.prompt("Edit task:", task.title);
+    if (!title?.trim() || title.trim() === task.title) return;
+    await updateTask(task.id, { title: title.trim() });
+  };
+
   const confirmRemove = async () => {
     if (!removing) return;
     setBusy(true);
@@ -223,14 +229,24 @@ export function BoardEditor({
                       )
                     )}
                     {adminMode && (
-                      <button
-                        type="button"
-                        className="icon-btn danger"
-                        title="Delete task"
-                        onClick={() => setRemoving({ kind: "task", id: task.id, label: task.title })}
-                      >
-                        🗑
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="icon-btn"
+                          title="Edit task text"
+                          onClick={() => renameTask(task)}
+                        >
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-btn danger"
+                          title="Delete task"
+                          onClick={() => setRemoving({ kind: "task", id: task.id, label: task.title })}
+                        >
+                          🗑
+                        </button>
+                      </>
                     )}
                   </div>
                 ))}

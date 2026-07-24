@@ -551,16 +551,61 @@ a { color: inherit; }
 .loc-stats { display: flex; justify-content: space-between; gap: 8px; font-size: 10.5px; color: var(--backcourt); flex-wrap: wrap; }
 
 /* ============================================================
+   STATUS CALENDAR
+   ============================================================ */
+.cal-head {
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px; margin-bottom: 14px;
+}
+.cal-head h3 { font-size: 22px; letter-spacing: .04em; min-width: 190px; text-align: center; }
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+}
+.cal-dow {
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--backcourt); text-align: center; padding-bottom: 6px;
+}
+.cal-cell {
+  min-height: 78px; border: 1px solid rgba(255, 255, 255, .06);
+  border-radius: 8px; padding: 5px 6px;
+  display: flex; flex-direction: column; gap: 3px;
+  background: rgba(255, 255, 255, .015);
+}
+.cal-cell.empty { border-color: transparent; background: none; }
+.cal-cell.today { border-color: rgba(190, 229, 21, .5); }
+.cal-daynum { font-size: 10.5px; color: var(--backcourt); }
+.cal-cell.today .cal-daynum { color: var(--dillball); font-weight: 600; }
+.cal-event {
+  font-size: 9.5px; line-height: 1.3; padding: 2px 5px;
+  border-radius: 5px; border: 1px solid;
+  color: var(--baseline); cursor: default;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cal-event.done { opacity: .45; text-decoration: line-through; }
+.cal-more { font-size: 9.5px; color: var(--backcourt); cursor: default; }
+.cal-legend {
+  display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px;
+  padding-top: 12px; border-top: 1px solid var(--line);
+}
+.cal-key {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--flapjack);
+}
+.cal-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* ============================================================
    NOTIFICATION BELL
    ============================================================ */
 .bell-wrap { position: fixed; top: 22px; right: 26px; z-index: 70; }
 .bell {
   position: relative; width: 42px; height: 42px; border-radius: 12px;
   background: var(--erne); border: 1px solid var(--line);
-  cursor: pointer; font-size: 17px; display: flex;
-  align-items: center; justify-content: center; transition: border-color .15s;
+  cursor: pointer; color: var(--flapjack); display: flex;
+  align-items: center; justify-content: center;
+  transition: border-color .15s, color .15s;
 }
-.bell:hover { border-color: var(--dillball); }
+.bell:hover { border-color: var(--dillball); color: var(--dillball); }
+.bell-icon { color: var(--dillball); display: inline-flex; align-items: center; }
 .bell-badge {
   position: absolute; top: -6px; right: -6px;
   background: var(--volley); color: #fff; font-family: var(--font-body);

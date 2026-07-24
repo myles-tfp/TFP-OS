@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { timeAgo } from "@/lib/format";
+import { IconBell, IconMegaphone, IconDoc, IconCheck, IconChat } from "@/components/icons";
 
 export type Notification = {
   id: string;
@@ -14,10 +15,11 @@ export type Notification = {
   created_at: string;
 };
 
-const KIND_ICONS: Record<string, string> = {
-  post: "📣",
-  resource: "📄",
-  task: "✅",
+const KIND_ICONS: Record<string, React.ReactNode> = {
+  post: <IconMegaphone size={16} />,
+  resource: <IconDoc size={16} />,
+  task: <IconCheck size={16} />,
+  chat: <IconChat size={16} />,
 };
 
 export function NotificationBell({
@@ -58,7 +60,7 @@ export function NotificationBell({
         title="Notifications"
         aria-label={`Notifications${unseen > 0 ? `, ${unseen} new` : ""}`}
       >
-        🔔
+        <IconBell size={19} />
         {unseen > 0 && <span className="bell-badge">{unseen > 9 ? "9+" : unseen}</span>}
       </button>
 
