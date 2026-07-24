@@ -2,7 +2,7 @@
 
 Private operations platform for The Flying Pickle franchisees. Franchisor (HQ) posts updates and resources; franchisees log in to get everything they need to run their location.
 
-**Stack:** Next.js (App Router) · Supabase (auth + data) · Netlify (hosting) · Google Drive + PlayByPoint (phase 2)
+**Stack:** Next.js (App Router) · Supabase (auth + data) · Vercel (hosting) · Google Drive + PlayByPoint (phase 2)
 
 ## Status — build order
 
@@ -27,9 +27,9 @@ npm run dev
 2. Add franchisees by inserting rows into `franchisees` (the admin dashboard will manage this in a later step).
 3. Optional but preferred: enable Google under **Auth → Providers** and add your site URL + `https://YOUR-SITE/auth/callback` to the redirect allowlist under **Auth → URL Configuration**. Email/password works without any extra setup.
 
-## Deploying to Netlify
+## Deploying to Vercel
 
-Connect the GitHub repo to Netlify (auto-deploy on push). `netlify.toml` is already configured with the Next.js runtime. Set two environment variables in Site settings:
+Connect the GitHub repo to Vercel (auto-deploy on push). `Vercel auto-detects Next.js — no config needed. Set two environment variables in Site settings:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`

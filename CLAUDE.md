@@ -7,7 +7,7 @@ franchisees log in to run their location.
 ## Stack & pipeline
 - Next.js App Router (TypeScript), plain CSS in `app/globals.css` (no Tailwind)
 - Supabase: auth + Postgres (RLS everywhere) + storage (public `media` bucket)
-- Netlify: continuous deployment from `main` — every push auto-deploys
+- Vercel: continuous deployment from `main` — every push auto-deploys
 - The owner (Myles, myles@theflyingpickle.com) is non-technical. He runs all
   SQL himself in the Supabase SQL editor. Hand him numbered migration
   scripts pasted in chat as one block, safe to re-run, and also commit them
@@ -16,7 +16,7 @@ franchisees log in to run their location.
 ## Hard rules
 - Run `next build` successfully BEFORE every push. Never push unverified code.
 - Never commit secrets. Env vars: `NEXT_PUBLIC_SUPABASE_URL`,
-  `NEXT_PUBLIC_SUPABASE_ANON_KEY` (in `.env.local` + Netlify).
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `ANTHROPIC_API_KEY` (in `.env.local` + Vercel).
 - RLS on every table AND table grants to `authenticated` (error 42501 =
   missing grants — this bit us once).
 - Content/categories are data, not code (topics table drives the sidebar).
