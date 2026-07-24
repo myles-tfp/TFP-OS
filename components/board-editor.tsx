@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { IconPencil, IconTrash, IconMegaphone } from "@/components/icons";
 import {
   STATUS_META,
   phaseProgress,
@@ -151,14 +152,14 @@ export function BoardEditor({
               </div>
               {adminMode && (
                 <span className="post-actions" style={{ opacity: 1 }} onClick={(e) => e.stopPropagation()}>
-                  <button type="button" className="icon-btn" title="Rename" onClick={() => renamePhase(phase)}>✎</button>
+                  <button type="button" className="icon-btn" title="Rename" onClick={() => renamePhase(phase)}><IconPencil size={14} /></button>
                   <button
                     type="button"
                     className="icon-btn"
                     title={phase.tag === "marketing" ? "Remove from Marketing plan" : "Include in Marketing plan"}
                     onClick={() => toggleMarketing(phase)}
                   >
-                    📣
+                    <IconMegaphone size={14} />
                   </button>
                   <button
                     type="button"
@@ -166,7 +167,7 @@ export function BoardEditor({
                     title="Delete phase"
                     onClick={() => setRemoving({ kind: "phase", id: phase.id, label: phase.name })}
                   >
-                    🗑
+                    <IconTrash size={14} />
                   </button>
                 </span>
               )}
@@ -236,7 +237,7 @@ export function BoardEditor({
                           title="Edit task text"
                           onClick={() => renameTask(task)}
                         >
-                          ✎
+                          <IconPencil size={13} />
                         </button>
                         <button
                           type="button"
@@ -244,7 +245,7 @@ export function BoardEditor({
                           title="Delete task"
                           onClick={() => setRemoving({ kind: "task", id: task.id, label: task.title })}
                         >
-                          🗑
+                          <IconTrash size={13} />
                         </button>
                       </>
                     )}

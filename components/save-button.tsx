@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { IconStar } from "@/components/icons";
 
 export function SaveButton({
   meId,
@@ -54,7 +55,7 @@ export function SaveButton({
       title={isSaved ? "Remove from Saved" : "Save for later"}
       aria-pressed={isSaved}
     >
-      {isSaved ? "★" : "☆"}
+      <IconStar size={14} filled={isSaved} />
     </button>
   );
 }

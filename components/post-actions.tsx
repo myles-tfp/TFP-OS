@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { SaveButton } from "@/components/save-button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { IconPencil, IconTrash } from "@/components/icons";
 
 export function PostActions({
   postId,
@@ -45,7 +46,7 @@ export function PostActions({
             className="icon-btn"
             title="Edit post"
           >
-            ✎
+            <IconPencil size={13} />
           </Link>
           <button
             type="button"
@@ -53,7 +54,7 @@ export function PostActions({
             onClick={() => setConfirming(true)}
             title="Delete post"
           >
-            🗑
+            <IconTrash size={13} />
           </button>
           <ConfirmDialog
             open={confirming}

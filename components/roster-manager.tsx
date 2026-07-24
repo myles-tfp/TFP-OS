@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { IconPause, IconPlay, IconTrash } from "@/components/icons";
 import type { Franchisee } from "@/lib/types";
 
 /** Admin: create locations (with their manager) and manage all members. */
@@ -130,7 +131,7 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
               }
               disabled={f.id === meId}
             >
-              {f.status === "active" ? "⏸" : "▶"}
+              {f.status === "active" ? <IconPause size={13} /> : <IconPlay size={13} />}
             </button>
             <button
               type="button"
@@ -139,7 +140,7 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
               onClick={() => setRemoving(f)}
               disabled={f.id === meId}
             >
-              🗑
+              <IconTrash size={13} />
             </button>
           </div>
         ))}

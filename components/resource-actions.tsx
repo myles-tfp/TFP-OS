@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SaveButton } from "@/components/save-button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { IconTrash } from "@/components/icons";
 
 export function ResourceActions({
   resourceId,
@@ -57,7 +58,7 @@ export function ResourceActions({
             onClick={() => setConfirming(true)}
             title="Delete resource"
           >
-            🗑
+            <IconTrash size={13} />
           </button>
           <ConfirmDialog
             open={confirming}

@@ -62,6 +62,58 @@ export function IconCheck({ size }: { size?: number }) {
   );
 }
 
+export function IconPencil({ size }: { size?: number }) {
+  return (
+    <Base size={size}>
+      <path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19z" />
+      <path d="M14.5 6.5l3 3" />
+    </Base>
+  );
+}
+
+export function IconTrash({ size }: { size?: number }) {
+  return (
+    <Base size={size}>
+      <path d="M4 7h16M10 4h4M6.5 7l.8 12A1.5 1.5 0 0 0 8.8 20.5h6.4a1.5 1.5 0 0 0 1.5-1.5L17.5 7" />
+      <path d="M10 11v6M14 11v6" />
+    </Base>
+  );
+}
+
+export function IconStar({ size, filled = false }: { size?: number; filled?: boolean }) {
+  return (
+    <svg
+      width={size ?? 18}
+      height={size ?? 18}
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />
+    </svg>
+  );
+}
+
+export function IconPause({ size }: { size?: number }) {
+  return (
+    <Base size={size}>
+      <path d="M9 5v14M15 5v14" />
+    </Base>
+  );
+}
+
+export function IconPlay({ size }: { size?: number }) {
+  return (
+    <Base size={size}>
+      <path d="M7 4.5v15l12-7.5z" />
+    </Base>
+  );
+}
+
 export function IconChat({ size }: { size?: number }) {
   return (
     <Base size={size}>

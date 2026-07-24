@@ -74,18 +74,18 @@ a { color: inherit; }
     radial-gradient(55% 45% at 80% 40%, rgba(0, 114, 129, .50), transparent 72%),
     radial-gradient(70% 50% at 40% 92%, rgba(0, 114, 129, .30), transparent 70%);
   filter: blur(28px);
-  animation: drift 9s ease-in-out infinite alternate;
+  animation: drift 7s ease-in-out infinite alternate;
 }
 
 @keyframes drift {
   0%   { transform: translate(0, 0) scale(1); }
-  33%  { transform: translate(6%, -4%) scale(1.08); }
-  66%  { transform: translate(-4%, 5%) scale(1.04); }
-  100% { transform: translate(3%, 3%) scale(1.10); }
+  33%  { transform: translate(12%, -8%) scale(1.18); }
+  66%  { transform: translate(-9%, 10%) scale(1.06); }
+  100% { transform: translate(7%, 7%) scale(1.22); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar::before { animation: none; }
+  .sidebar::before, .chat-rail::before { animation: none; }
 }
 
 /* faint grain so the gradient reads like textured glass, not flat CSS */
@@ -721,8 +721,26 @@ a { color: inherit; }
 .chat-panel.open { transform: translateX(0); }
 .chat-rail {
   width: 150px; flex-shrink: 0; padding: 14px 8px;
-  border-right: 1px solid var(--line); background: rgba(255, 255, 255, .02);
-  overflow-y: auto; display: flex; flex-direction: column;
+  border-right: 1px solid rgba(190, 229, 21, .14);
+  background: rgba(9, 32, 54, .45);
+  overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column;
+  position: relative; isolation: isolate;
+}
+.chat-rail::before {
+  content: ""; position: absolute; inset: -40% -60% auto -60%;
+  height: 150%; z-index: -1;
+  background:
+    radial-gradient(60% 40% at 25% 12%, rgba(190, 229, 21, .5), transparent 70%),
+    radial-gradient(55% 45% at 80% 40%, rgba(0, 114, 129, .45), transparent 72%),
+    radial-gradient(70% 50% at 40% 92%, rgba(0, 114, 129, .3), transparent 70%);
+  filter: blur(28px);
+  animation: drift 7s ease-in-out infinite alternate;
+  animation-delay: 1.4s;
+}
+.chat-rail::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  opacity: .05; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 .chat-search, .chat-loc {
   width: 100%; background: rgba(255, 255, 255, .05); border: 1px solid var(--line);

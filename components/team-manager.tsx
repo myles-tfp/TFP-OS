@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { IconTrash } from "@/components/icons";
 import type { Franchisee } from "@/lib/types";
 
 export function TeamManager({ team, me }: { team: Franchisee[]; me: Franchisee }) {
@@ -100,7 +101,7 @@ export function TeamManager({ team, me }: { team: Franchisee[]; me: Franchisee }
                 title="Remove from team"
                 onClick={() => setRemoving(member)}
               >
-                🗑
+                <IconTrash size={13} />
               </button>
             )}
           </div>
