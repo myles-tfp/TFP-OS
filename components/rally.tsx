@@ -32,17 +32,16 @@ function renderText(text: string) {
   });
 }
 
-export function RallyNavItem() {
+export function RallyBubble() {
   return (
     <button
       type="button"
-      className="nav-item rally-nav"
+      className="rally-bubble"
       onClick={() => window.dispatchEvent(new CustomEvent("rally:toggle"))}
+      title="Ask Rally"
+      aria-label="Ask Rally, the TFP assistant"
     >
-      <span className="rally-nav-icon">
-        <RallyIcon size={20} animated={false} />
-      </span>
-      Rally
+      <RallyIcon size={38} />
     </button>
   );
 }

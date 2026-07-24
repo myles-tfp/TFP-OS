@@ -21,6 +21,8 @@ export interface Franchisee {
   location_id: string | null;
   location_role: LocationRole;
   notifications_seen_at?: string;
+  display_name?: string | null;
+  avatar_url?: string | null;
   /** joined location row when selected with locations(*) */
   locations?: Location | null;
 }

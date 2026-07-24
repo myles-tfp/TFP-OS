@@ -1,6 +1,7 @@
 import Image from "next/image";
+import Link from "next/link";
 import { NavItem } from "@/components/nav-item";
-import { RallyNavItem } from "@/components/rally";
+import { ChatNavItem } from "@/components/chat";
 import type { Franchisee } from "@/lib/types";
 
 export type Topic = {
@@ -16,6 +17,9 @@ export function Sidebar({
   franchisee: Franchisee;
   topics: Topic[];
 }) {
+  const isAdmin = franchisee.role === "admin";
+  const isManager = franchisee.location_role === "manager" && !!franchisee.location_id;
+
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -32,9 +36,7 @@ export function Sidebar({
         <p className="nav-label">This Week</p>
         <NavItem name="Home" href="/" />
         <NavItem name="Saved" href="/saved" />
-        {franchisee.location_role === "manager" && franchisee.location_id && (
-          <NavItem name="Team" href="/team" />
-        )}
+        <ChatNavItem />
       </div>
 
       <div className="nav-group">
@@ -47,18 +49,20 @@ export function Sidebar({
             soon={t.status !== "live"}
           />
         ))}
-        <RallyNavItem />
       </div>
 
-      {franchisee.role === "admin" && (
+      {(isAdmin || isManager) && (
         <div className="nav-group">
           <p className="nav-label">Manage</p>
-          <NavItem name="Admin" href="/admin" />
+          {isAdmin && <NavItem name="Admin" href="/admin" />}
+          {isManager && <NavItem name="Team" href="/team" />}
         </div>
       )}
 
       <div className="sidebar-foot">
-        <div className="who">{franchisee.email}</div>
+        <Link href="/account" className="who" style={{ display: "block", textDecoration: "none" }}>
+          {franchisee.email}
+        </Link>
         <form action="/auth/signout" method="post">
           <button type="submit" className="signout">
             Sign out
@@ -66,7 +70,7 @@ export function Sidebar({
         </form>
         <div className="role-pill">
           <span className="dot" />
-          {franchisee.role === "admin" ? "Admin" : "Franchisee"}
+          {isAdmin ? "Admin" : franchisee.location_role === "manager" ? "Manager" : "Team member"}
         </div>
       </div>
     </aside>
