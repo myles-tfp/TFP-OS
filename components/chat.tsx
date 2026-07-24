@@ -291,7 +291,7 @@ export function ChatPanel({
   return (
     <aside className={`chat-panel${open ? " open" : ""}`} aria-hidden={!open}>
       <div className="chat-rail">
-        {isAdmin && groups.size > 1 && (
+        {isAdmin && groups.size > 0 && (
           <select
             className="chat-loc"
             value={selLoc ?? ""}

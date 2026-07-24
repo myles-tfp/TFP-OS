@@ -697,9 +697,15 @@ a { color: inherit; }
 .chat-hit .m { font-size: 10.5px; color: var(--backcourt); }
 .chat-hit .b { font-size: 12.5px; color: var(--flapjack); }
 
-/* Rally scoots to the left while chat is open */
-body.chat-open .rally-bubble { right: auto; left: 26px; }
-body.chat-open .rally-panel { right: auto; left: 26px; }
+/* Rally parks just left of the chat panel while it's open */
+body.chat-open .rally-bubble {
+  right: calc(min(560px, 96vw) + 22px);
+}
+body.chat-open .rally-panel {
+  right: calc(min(560px, 96vw) + 22px);
+}
+.rally-bubble, .rally-panel { transition-property: transform, right, opacity; }
+.rally-bubble { transition: right .28s cubic-bezier(.32, .72, .28, 1), transform .15s, border-color .15s; }
 .chat-chan {
   display: flex; justify-content: space-between; align-items: center; gap: 6px;
   width: 100%; text-align: left; background: none; border: none;
