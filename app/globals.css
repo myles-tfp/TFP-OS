@@ -670,12 +670,13 @@ a { color: inherit; }
   border-right: 1px solid var(--line); background: rgba(255, 255, 255, .02);
   overflow-y: auto; display: flex; flex-direction: column;
 }
-.chat-search {
+.chat-search, .chat-loc {
   width: 100%; background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
   border-radius: 8px; padding: 7px 9px; color: var(--baseline);
-  font-family: var(--font-body); font-size: 11.5px; margin-bottom: 10px; outline: none;
+  font-family: var(--font-body); font-size: 11.5px; margin-bottom: 8px; outline: none;
 }
-.chat-search:focus { border-color: var(--dillball); }
+.chat-search:focus, .chat-loc:focus { border-color: var(--dillball); }
+.chat-loc option { background: var(--erne); color: var(--baseline); }
 .chat-loc-head {
   display: flex; align-items: center; gap: 6px; width: 100%;
   background: none; border: none; text-align: left; cursor: pointer;

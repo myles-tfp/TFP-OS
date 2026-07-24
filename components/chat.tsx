@@ -81,7 +81,7 @@ export function ChatPanel({
 }) {
   const [open, setOpen] = useState(false);
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [openLocs, setOpenLocs] = useState<Set<string>>(new Set());
+  const [selLoc, setSelLoc] = useState<string | null>(myLocationId);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unread, setUnread] = useState<Record<string, number>>({});
@@ -105,17 +105,7 @@ export function ChatPanel({
     ]);
     const list = (chans ?? []) as unknown as Channel[];
     setChannels(list);
-    if (list.length > 0 && !list.some((c) => c.id === activeRef.current)) {
-      const preferred = myLocationId
-        ? list.find((c) => c.location_id === myLocationId)
-        : list[0];
-      setActiveId((preferred ?? list[0]).id);
-    }
-    setOpenLocs((prev) => {
-      if (prev.size > 0) return prev;
-      const first = myLocationId ?? list[0]?.location_id;
-      return first ? new Set([first]) : prev;
-    });
+    setSelLoc((prev) => prev ?? myLocationId ?? list[0]?.location_id ?? null);
 
     if (list.length > 0) {
       const readMap = new Map(
@@ -180,6 +170,15 @@ export function ChatPanel({
   useEffect(() => {
     if (open && activeId) void loadMessages(activeId);
   }, [open, activeId, loadMessages]);
+
+  // keep the active channel inside the selected location
+  useEffect(() => {
+    if (!selLoc || channels.length === 0) return;
+    const inLoc = channels.filter((c) => c.location_id === selLoc);
+    if (inLoc.length > 0 && !inLoc.some((c) => c.id === activeId)) {
+      setActiveId(inLoc[0].id);
+    }
+  }, [selLoc, channels, activeId]);
 
   useEffect(() => {
     if (!open) return;
@@ -263,18 +262,9 @@ export function ChatPanel({
     void loadChannels();
   };
 
-  const toggleLoc = (id: string) => {
-    setOpenLocs((s) => {
-      const n = new Set(s);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
-  };
-
   const term = q.trim().toLowerCase();
 
-  // group channels by location for the rail
+  // locations for the dropdown (admins see all; others just theirs)
   const groups = new Map<string, { name: string; channels: Channel[] }>();
   for (const c of channels) {
     const g = groups.get(c.location_id) ?? {
@@ -285,23 +275,38 @@ export function ChatPanel({
     groups.set(c.location_id, g);
   }
 
-  const visibleGroups = [...groups.entries()].filter(([, g]) => {
-    if (!term) return true;
-    return (
-      g.name.toLowerCase().includes(term) ||
-      g.channels.some((c) => c.name.toLowerCase().includes(term))
-    );
-  });
-
-  const active = channels.find((c) => c.id === activeId);
   const locUnread = (locId: string) =>
     channels
       .filter((c) => c.location_id === locId)
       .reduce((sum, c) => sum + (unread[c.id] ?? 0), 0);
 
+  const railChannels = channels.filter(
+    (c) =>
+      c.location_id === selLoc &&
+      (!term || c.name.toLowerCase().includes(term))
+  );
+
+  const active = channels.find((c) => c.id === activeId);
+
   return (
     <aside className={`chat-panel${open ? " open" : ""}`} aria-hidden={!open}>
       <div className="chat-rail">
+        {isAdmin && groups.size > 1 && (
+          <select
+            className="chat-loc"
+            value={selLoc ?? ""}
+            onChange={(e) => setSelLoc(e.target.value)}
+            title="Location"
+          >
+            {[...groups.entries()].map(([locId, g]) => (
+              <option key={locId} value={locId}>
+                {g.name}
+                {locUnread(locId) > 0 ? ` (${locUnread(locId)})` : ""}
+              </option>
+            ))}
+          </select>
+        )}
+
         <input
           className="chat-search"
           type="text"
@@ -311,58 +316,30 @@ export function ChatPanel({
           aria-label="Filter channels or search messages"
         />
 
-        {visibleGroups.map(([locId, g]) => {
-          const expanded = openLocs.has(locId) || !!term;
-          const showChans = term
-            ? g.channels.filter(
-                (c) =>
-                  c.name.toLowerCase().includes(term) ||
-                  g.name.toLowerCase().includes(term)
-              )
-            : g.channels;
-          return (
-            <div key={locId}>
-              {(isAdmin || groups.size > 1) && (
-                <button
-                  type="button"
-                  className="chat-loc-head"
-                  onClick={() => toggleLoc(locId)}
-                >
-                  <span className={`chev${expanded ? " open" : ""}`}>▸</span>
-                  {g.name}
-                  {!expanded && locUnread(locId) > 0 && (
-                    <span className="chat-unread">{locUnread(locId)}</span>
-                  )}
-                </button>
-              )}
-              {(expanded || (!isAdmin && groups.size === 1)) &&
-                showChans.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className={`chat-chan${c.id === activeId ? " on" : ""}`}
-                    onClick={() => setActiveId(c.id)}
-                  >
-                    <span># {c.name}</span>
-                    {(unread[c.id] ?? 0) > 0 && (
-                      <span className="chat-unread">{unread[c.id]}</span>
-                    )}
-                  </button>
-                ))}
-              {(expanded || (!isAdmin && groups.size === 1)) &&
-                (isAdmin || (canManage && locId === myLocationId)) && (
-                  <button
-                    type="button"
-                    className="add-item"
-                    style={{ paddingLeft: 9 }}
-                    onClick={() => addChannel(locId)}
-                  >
-                    + New channel
-                  </button>
-                )}
-            </div>
-          );
-        })}
+        <p className="nav-label" style={{ margin: "2px 0 8px 6px" }}>Channels</p>
+        {railChannels.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            className={`chat-chan${c.id === activeId ? " on" : ""}`}
+            onClick={() => setActiveId(c.id)}
+          >
+            <span># {c.name}</span>
+            {(unread[c.id] ?? 0) > 0 && (
+              <span className="chat-unread">{unread[c.id]}</span>
+            )}
+          </button>
+        ))}
+        {selLoc && (isAdmin || (canManage && selLoc === myLocationId)) && (
+          <button
+            type="button"
+            className="add-item"
+            style={{ paddingLeft: 9 }}
+            onClick={() => addChannel(selLoc)}
+          >
+            + New channel
+          </button>
+        )}
       </div>
 
       <div className="chat-main">
@@ -396,6 +373,8 @@ export function ChatPanel({
                 type="button"
                 className="chat-hit"
                 onClick={() => {
+                  const chan = channels.find((c) => c.id === h.channel_id);
+                  if (chan) setSelLoc(chan.location_id);
                   setActiveId(h.channel_id);
                   setQ("");
                   setHits(null);
