@@ -828,6 +828,46 @@ body.chat-open .rally-panel {
 .chat-msg-reacts .react { padding: 3px 8px; font-size: 11.5px; }
 .chat-react-add { display: none; gap: 4px; }
 .chat-msg:hover .chat-react-add { display: inline-flex; }
+
+/* chat composer: formatting toolbar + multi-line input */
+.chat-input-wrap { border-top: 1px solid var(--line); }
+.chat-toolbar {
+  display: flex; align-items: center; gap: 5px; padding: 8px 16px 6px;
+}
+.fmt-btn {
+  width: 26px; height: 24px; border-radius: 6px;
+  background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+  color: var(--flapjack); font-family: var(--font-body); font-size: 12px;
+  font-weight: 700; cursor: pointer; transition: all .15s;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.fmt-btn.italic { font-style: italic; font-weight: 500; }
+.fmt-btn:hover { border-color: var(--dillball); color: var(--dillball); }
+.chat-hint { margin-left: auto; font-size: 10px; color: var(--backcourt); }
+.rally-input textarea {
+  flex: 1; background: rgba(255, 255, 255, .05);
+  border: 1px solid var(--line); border-radius: 9px;
+  padding: 10px 14px; color: var(--baseline);
+  font-family: var(--font-body); font-size: 13px; outline: none;
+  resize: none; line-height: 1.5;
+}
+.rally-input textarea:focus { border-color: var(--dillball); }
+
+/* inline message editing */
+.chat-edit-btn {
+  background: none; border: none; color: var(--backcourt);
+  font-family: var(--font-body); font-size: 10px; cursor: pointer;
+  padding: 0; text-decoration: underline; text-underline-offset: 2px;
+}
+.chat-edit-btn:hover { color: var(--dillball); }
+.chat-edit-box { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.chat-edit-box textarea {
+  background: rgba(255, 255, 255, .05); border: 1px solid var(--dillball);
+  border-radius: 9px; padding: 9px 12px; color: var(--baseline);
+  font-family: var(--font-body); font-size: 13px; outline: none;
+  resize: vertical; line-height: 1.5;
+}
+.chat-msg-text strong { color: var(--baseline); font-weight: 600; }
 .rally-head {
   display: flex; align-items: center; gap: 12px;
   padding: 20px 20px 16px; border-bottom: 1px solid var(--line);

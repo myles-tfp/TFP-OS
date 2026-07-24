@@ -20,9 +20,12 @@ type ChatMessage = {
   author_id: string;
   body: string;
   created_at: string;
+  edited_at: string | null;
   franchisees: Author | null;
   chat_reactions: { franchisee_id: string; emoji: string }[];
 };
+
+const EDIT_WINDOW_MS = 3 * 60 * 1000;
 
 type Channel = {
   id: string;
@@ -58,14 +61,22 @@ export function ChatNavItem({ unread }: { unread: number }) {
   );
 }
 
+/** Markdown-lite: **bold**, *italic*, and @mentions. */
 function renderBody(text: string) {
-  return text.split(/(@[\w.-]+)/g).map((part, i) =>
-    part.startsWith("@") ? (
-      <span key={i} className="mention">{part}</span>
-    ) : (
-      part
-    )
-  );
+  return text
+    .split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*|@[\w.-]+)/g)
+    .map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith("*") && part.endsWith("*") && part.length > 2) {
+        return <em key={i}>{part.slice(1, -1)}</em>;
+      }
+      if (part.startsWith("@")) {
+        return <span key={i} className="mention">{part}</span>;
+      }
+      return part;
+    });
 }
 
 export function ChatPanel({
@@ -89,9 +100,42 @@ export function ChatPanel({
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<SearchHit[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
   const bodyRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const activeRef = useRef<string | null>(null);
   activeRef.current = activeId;
+
+  /** Wrap the current selection in ** or * (toolbar + Cmd/Ctrl+B/I). */
+  const applyFormat = (marker: "**" | "*") => {
+    const el = inputRef.current;
+    if (!el) return;
+    const { selectionStart: s, selectionEnd: e, value } = el;
+    const selected = value.slice(s, e) || "text";
+    const next = value.slice(0, s) + marker + selected + marker + value.slice(e);
+    setDraft(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(s + marker.length, s + marker.length + selected.length);
+    });
+  };
+
+  const onInputKeys = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      e.currentTarget.form?.requestSubmit();
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+      e.preventDefault();
+      applyFormat("**");
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "i") {
+      e.preventDefault();
+      applyFormat("*");
+    }
+  };
 
   const supabase = createClient();
 
@@ -134,7 +178,7 @@ export function ChatPanel({
       const { data } = await supabase
         .from("chat_messages")
         .select(
-          "id, channel_id, author_id, body, created_at, franchisees(display_name, email, avatar_url, locations(name)), chat_reactions(franchisee_id, emoji)"
+          "id, channel_id, author_id, body, created_at, edited_at, franchisees(display_name, email, avatar_url, locations(name)), chat_reactions(franchisee_id, emoji)"
         )
         .eq("channel_id", channelId)
         .order("created_at", { ascending: true })
@@ -227,6 +271,22 @@ export function ChatPanel({
     if (error) window.alert(`Couldn't send: ${error.message}`);
     await loadMessages(activeId);
     setBusy(false);
+  };
+
+  const saveEdit = async () => {
+    const text = editDraft.trim();
+    if (!editingId || !text) return;
+    const { error, data } = await supabase
+      .from("chat_messages")
+      .update({ body: text, edited_at: new Date().toISOString() })
+      .eq("id", editingId)
+      .select("id");
+    if (error || !data?.length) {
+      window.alert("Couldn't edit — the 3-minute window may have closed.");
+    }
+    setEditingId(null);
+    setEditDraft("");
+    if (activeId) void loadMessages(activeId);
   };
 
   const toggleReaction = async (messageId: string, emoji: string, mine: boolean) => {
@@ -418,9 +478,53 @@ export function ChatPanel({
                       <span className="n">
                         {memberTitle(a?.locations?.name, a?.display_name, a?.email ?? "unknown")}
                       </span>
-                      <span className="t">{timeAgo(m.created_at)}</span>
+                      <span className="t">
+                        {timeAgo(m.created_at)}
+                        {m.edited_at && " · edited"}
+                      </span>
+                      {m.author_id === meId &&
+                        Date.now() - new Date(m.created_at).getTime() < EDIT_WINDOW_MS &&
+                        editingId !== m.id && (
+                          <button
+                            type="button"
+                            className="chat-edit-btn"
+                            title="Edit (3-minute window)"
+                            onClick={() => {
+                              setEditingId(m.id);
+                              setEditDraft(m.body);
+                            }}
+                          >
+                            edit
+                          </button>
+                        )}
                     </div>
-                    <div className="chat-msg-text">{renderBody(m.body)}</div>
+                    {editingId === m.id ? (
+                      <div className="chat-edit-box">
+                        <textarea
+                          rows={2}
+                          value={editDraft}
+                          onChange={(e) => setEditDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              void saveEdit();
+                            }
+                            if (e.key === "Escape") setEditingId(null);
+                          }}
+                          autoFocus
+                        />
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button type="button" className="btn" onClick={() => void saveEdit()}>
+                            Save
+                          </button>
+                          <button type="button" className="btn ghost" onClick={() => setEditingId(null)}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="chat-msg-text">{renderBody(m.body)}</div>
+                    )}
                     <div className="chat-msg-reacts">
                       {Object.entries(counts).map(([emoji, c]) => (
                         <button
@@ -455,17 +559,40 @@ export function ChatPanel({
           </div>
         )}
 
-        <form className="rally-input" onSubmit={send}>
-          <input
-            type="text"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder={`Message # ${active?.name ?? ""}… (@ to tag)`}
-            aria-label="Chat message"
-          />
-          <button type="submit" className="btn" disabled={!draft.trim() || busy}>
-            Send
-          </button>
+        <form className="chat-input-wrap" onSubmit={send}>
+          <div className="chat-toolbar">
+            <button
+              type="button"
+              className="fmt-btn"
+              title="Bold (Ctrl/Cmd+B)"
+              onClick={() => applyFormat("**")}
+            >
+              B
+            </button>
+            <button
+              type="button"
+              className="fmt-btn italic"
+              title="Italic (Ctrl/Cmd+I)"
+              onClick={() => applyFormat("*")}
+            >
+              I
+            </button>
+            <span className="chat-hint">Enter to send · Shift+Enter for a new line</span>
+          </div>
+          <div className="rally-input" style={{ borderTop: "none", paddingTop: 0 }}>
+            <textarea
+              ref={inputRef}
+              rows={Math.min(5, Math.max(1, draft.split("\n").length))}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={onInputKeys}
+              placeholder={`Message # ${active?.name ?? ""}… (@ to tag)`}
+              aria-label="Chat message"
+            />
+            <button type="submit" className="btn" disabled={!draft.trim() || busy}>
+              Send
+            </button>
+          </div>
         </form>
       </div>
     </aside>
