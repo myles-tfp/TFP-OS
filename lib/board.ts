@@ -13,7 +13,7 @@ export interface BoardTask {
 
 export interface BoardPhase {
   id: string;
-  franchisee_id: string | null;
+  location_id: string | null;
   name: string;
   tag: string | null;
   sort_order: number;

@@ -3,9 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import type { Franchisee } from "@/lib/types";
 
 /**
- * Returns the signed-in user's franchisee profile (the allowlist row).
- * If the user is signed in but not on the allowlist, they are signed out
- * and sent back to login — the allowlist is the source of truth for access.
+ * Returns the signed-in member's roster row with their location joined.
+ * Not on the roster (or inactive) -> signed out. The roster is the
+ * source of truth for access.
  */
 export async function getFranchisee(): Promise<Franchisee> {
   const supabase = await createClient();
@@ -18,7 +18,7 @@ export async function getFranchisee(): Promise<Franchisee> {
 
   const { data: franchisee, error } = await supabase
     .from("franchisees")
-    .select("*")
+    .select("*, locations(*)")
     .ilike("email", user.email ?? "")
     .eq("status", "active")
     .maybeSingle();
@@ -30,4 +30,9 @@ export async function getFranchisee(): Promise<Franchisee> {
   }
 
   return franchisee as Franchisee;
+}
+
+/** Display name for the member's club. */
+export function locationName(f: Franchisee): string {
+  return f.locations?.name || f.location_name || f.email;
 }

@@ -19,11 +19,11 @@ import {
  */
 export function BoardEditor({
   phases,
-  franchiseeId,
+  locationId,
   adminMode,
 }: {
   phases: BoardPhase[];
-  franchiseeId: string | null; // null = template
+  locationId: string | null; // null = template
   adminMode: boolean;
 }) {
   const router = useRouter();
@@ -54,7 +54,7 @@ export function BoardEditor({
     if (!name?.trim()) return;
     const maxOrder = Math.max(0, ...phases.map((p) => p.sort_order));
     const { error } = await supabase.from("phases").insert({
-      franchisee_id: franchiseeId,
+      location_id: locationId,
       name: name.trim(),
       sort_order: maxOrder + 1,
     });

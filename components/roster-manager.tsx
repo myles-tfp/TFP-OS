@@ -6,39 +6,50 @@ import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { Franchisee } from "@/lib/types";
 
+/** Admin: create locations (with their manager) and manage all members. */
 export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: string }) {
   const router = useRouter();
+  const supabase = createClient();
+  const [locName, setLocName] = useState("");
   const [email, setEmail] = useState("");
-  const [location, setLocation] = useState("");
-  const [role, setRole] = useState("franchisee");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [removing, setRemoving] = useState<Franchisee | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const supabase = createClient();
-
-  const add = async (e: React.FormEvent) => {
+  const addLocation = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setNotice(null);
-    const { error } = await supabase.from("franchisees").insert({
+
+    const { data: loc, error: locErr } = await supabase
+      .from("locations")
+      .insert({ name: locName.trim() })
+      .select("id")
+      .single();
+    if (locErr || !loc) {
+      setError(locErr?.message ?? "Couldn't create the location.");
+      return;
+    }
+
+    const { error: memErr } = await supabase.from("franchisees").insert({
       email: email.trim().toLowerCase(),
-      location_name: location.trim() || null,
-      role,
+      location_id: loc.id,
+      location_role: "manager",
+      role: "franchisee",
     });
-    if (error) {
+    if (memErr) {
       setError(
-        /duplicate/i.test(error.message)
+        /duplicate/i.test(memErr.message)
           ? "That email is already on the roster."
-          : error.message
+          : memErr.message
       );
       return;
     }
-    setNotice(`${email.trim()} can now sign in.`);
+
+    setNotice(`${locName.trim()} created — ${email.trim()} can sign in as its manager. Their board is ready.`);
+    setLocName("");
     setEmail("");
-    setLocation("");
-    setRole("franchisee");
     router.refresh();
   };
 
@@ -67,7 +78,14 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
       {error && <div className="auth-error">{error}</div>}
       {notice && <div className="auth-notice">{notice}</div>}
 
-      <form onSubmit={add} className="roster-add">
+      <form onSubmit={addLocation} className="roster-add" style={{ gridTemplateColumns: "1fr 1.3fr auto" }}>
+        <input
+          type="text"
+          required
+          placeholder="Location name (Boise)"
+          value={locName}
+          onChange={(e) => setLocName(e.target.value)}
+        />
         <input
           type="email"
           required
@@ -75,18 +93,8 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <input
-          type="text"
-          placeholder="Location name"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-        />
-        <select value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="franchisee">Franchisee</option>
-          <option value="admin">Admin</option>
-        </select>
         <button type="submit" className="btn">
-          Add
+          Add location
         </button>
       </form>
 
@@ -94,32 +102,25 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
         {roster.map((f) => (
           <div className={`roster-row${f.status === "inactive" ? " inactive" : ""}`} key={f.id}>
             <div className="roster-who">
-              <div className="t">{f.location_name || "—"}</div>
+              <div className="t">{f.locations?.name || "—"}</div>
               <div className="m">{f.email}</div>
             </div>
+            <span className="cat-pill">
+              {f.role === "admin"
+                ? "Admin"
+                : f.location_role === "manager"
+                  ? "Manager"
+                  : "User"}
+            </span>
             <select
               value={f.role}
               onChange={(e) => update(f.id, { role: e.target.value as Franchisee["role"] })}
               disabled={f.id === meId}
-              title={f.id === meId ? "You can't change your own role" : "Role"}
+              title={f.id === meId ? "You can't change your own role" : "Global role"}
             >
               <option value="franchisee">Franchisee</option>
               <option value="admin">Admin</option>
             </select>
-            <input
-              type="number"
-              min={0}
-              className="roster-fm"
-              title="Founding members"
-              placeholder="FM"
-              defaultValue={f.founding_members ?? ""}
-              onBlur={(e) => {
-                const v = e.target.value === "" ? null : Number(e.target.value);
-                if (v !== (f.founding_members ?? null)) {
-                  update(f.id, { founding_members: v });
-                }
-              }}
-            />
             <button
               type="button"
               className="icon-btn"
@@ -146,8 +147,8 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
 
       <ConfirmDialog
         open={!!removing}
-        title="Remove this franchisee?"
-        message={`${removing?.email ?? ""} loses access immediately, and their reactions and saves are removed. Deactivating (⏸) is gentler if they might come back.`}
+        title="Remove this member?"
+        message={`${removing?.email ?? ""} loses access immediately. Deactivating (⏸) is gentler if they might come back. (Removing a manager does NOT delete their location or board.)`}
         onConfirm={remove}
         onCancel={() => setRemoving(null)}
         busy={busy}

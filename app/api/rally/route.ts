@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
   const { data: me } = await supabase
     .from("franchisees")
-    .select("*")
+    .select("*, locations(*)")
     .ilike("email", user.email ?? "")
     .eq("status", "active")
     .maybeSingle();
@@ -58,11 +58,13 @@ export async function POST(request: Request) {
         .select("title, body, created_at, topics(name)")
         .order("created_at", { ascending: false })
         .limit(15),
-      supabase
-        .from("phases")
-        .select("name, tag, sort_order, tasks(title, owner, status, due_date)")
-        .eq("franchisee_id", me.id)
-        .order("sort_order"),
+      me.location_id
+        ? supabase
+            .from("phases")
+            .select("name, tag, sort_order, tasks(title, owner, status, due_date)")
+            .eq("location_id", me.location_id)
+            .order("sort_order")
+        : Promise.resolve({ data: [] }),
     ]);
 
   const resourceBlock = (resources ?? [])
@@ -91,7 +93,7 @@ export async function POST(request: Request) {
     })
     .join("\n");
 
-  const system = `You are Rally, the assistant inside TFP OS — the private operations platform for The Flying Pickle (a pickleball franchise). You are talking to ${me.location_name || me.email} (role: ${me.role}).
+  const system = `You are Rally, the assistant inside TFP OS — the private operations platform for The Flying Pickle (a pickleball franchise). You are talking to ${me.locations?.name || me.email} (role: ${me.role}).
 
 Voice: friendly, confident, community-driven — approachable yet elevated, playful yet professional. Sentence case, plain verbs, no filler. Keep answers short and practical. An occasional pickleball flourish is fine; don't overdo it.
 
@@ -111,8 +113,8 @@ ${resourceBlock || "(no resources yet)"}
 ${postBlock || "(no posts yet)"}
 
 === THEIR NUMBERS ===
-Founding members: ${me.founding_members ?? "not recorded"} (goal: ${me.founding_goal ?? 100})
-Grand opening: ${me.grand_opening ?? "not scheduled yet"}`;
+Founding members: ${me.locations?.founding_members ?? "not recorded"} (goal: ${me.locations?.founding_goal ?? 100})
+Grand opening: ${me.locations?.grand_opening ?? "not scheduled yet"}`;
 
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",

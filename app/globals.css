@@ -671,6 +671,14 @@ a { color: inherit; }
   border: 1px solid var(--line); border-radius: 20px; padding: 2px 7px;
 }
 
+/* home Feed / Checklist tabs */
+.home-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+.home-tabs .tab { text-decoration: none; }
+.checklist-head {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 14px; margin-bottom: 12px;
+}
+
 /* composer tabs + preview */
 .tabs { display: flex; gap: 6px; margin-bottom: 16px; }
 .tab {

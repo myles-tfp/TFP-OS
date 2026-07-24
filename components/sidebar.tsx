@@ -32,6 +32,9 @@ export function Sidebar({
         <p className="nav-label">This Week</p>
         <NavItem name="Home" href="/" />
         <NavItem name="Saved" href="/saved" />
+        {franchisee.location_role === "manager" && franchisee.location_id && (
+          <NavItem name="Team" href="/team" />
+        )}
       </div>
 
       <div className="nav-group">

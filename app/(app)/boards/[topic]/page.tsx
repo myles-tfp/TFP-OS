@@ -50,13 +50,13 @@ export default async function BoardPage({
       .eq("topic_id", board.id)
       .order("updated_at", { ascending: false }),
     supabase.from("saves").select("post_id, resource_id"),
-    isMarketing && !isAdmin
+    isMarketing && !isAdmin && franchisee.location_id
       ? supabase
           .from("phases")
           .select(
-            "id, franchisee_id, name, tag, sort_order, tasks(id, phase_id, title, owner, status, due_date, sort_order)"
+            "id, location_id, name, tag, sort_order, tasks(id, phase_id, title, owner, status, due_date, sort_order)"
           )
-          .eq("franchisee_id", franchisee.id)
+          .eq("location_id", franchisee.location_id)
           .eq("tag", "marketing")
           .order("sort_order")
       : Promise.resolve({ data: null }),
@@ -112,7 +112,7 @@ export default async function BoardPage({
           <p className="panel-note">
             Check things off as you go — HQ sees your progress live.
           </p>
-          <BoardEditor phases={plan} franchiseeId={franchisee.id} adminMode={false} />
+          <BoardEditor phases={plan} locationId={franchisee.location_id} adminMode={false} />
         </section>
       )}
 

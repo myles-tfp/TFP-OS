@@ -21,35 +21,41 @@ export default async function AdminPage({
   const { error } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: topics }, { data: roster }, { data: recentPosts }, { data: allPhases }] =
-    await Promise.all([
-      supabase.from("topics").select("id, name, status").order("sort_order"),
-      supabase
-        .from("franchisees")
-        .select("*")
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("posts")
-        .select("id, title, body, created_at, reactions(franchisee_id)")
-        .order("created_at", { ascending: false })
-        .limit(8),
-      supabase
-        .from("phases")
-        .select("id, franchisee_id, name, tag, sort_order, tasks(id, phase_id, title, owner, status, due_date, sort_order)")
-        .not("franchisee_id", "is", null)
-        .order("sort_order"),
-    ]);
+  const [
+    { data: topics },
+    { data: roster },
+    { data: locations },
+    { data: recentPosts },
+    { data: allPhases },
+  ] = await Promise.all([
+    supabase.from("topics").select("id, name, status").order("sort_order"),
+    supabase
+      .from("franchisees")
+      .select("*, locations(name)")
+      .order("created_at", { ascending: true }),
+    supabase.from("locations").select("*").order("created_at"),
+    supabase
+      .from("posts")
+      .select("id, title, body, created_at, reactions(franchisee_id)")
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase
+      .from("phases")
+      .select("id, location_id, name, tag, sort_order, tasks(id, phase_id, title, owner, status, due_date, sort_order)")
+      .not("location_id", "is", null)
+      .order("sort_order"),
+  ]);
 
   const liveTopics = (topics ?? []).filter((t) => t.status === "live");
   const activeRoster = (roster ?? []).filter((f) => f.status === "active");
 
-  // group phases per franchisee for the locations overview
-  const boardsByFranchisee = new Map<string, BoardPhase[]>();
+  // group phases per location for the overview
+  const boardsByLocation = new Map<string, BoardPhase[]>();
   for (const p of (allPhases ?? []) as unknown as BoardPhase[]) {
-    if (!p.franchisee_id) continue;
-    const list = boardsByFranchisee.get(p.franchisee_id) ?? [];
+    if (!p.location_id) continue;
+    const list = boardsByLocation.get(p.location_id) ?? [];
     list.push(p);
-    boardsByFranchisee.set(p.franchisee_id, list);
+    boardsByLocation.set(p.location_id, list);
   }
 
   return (
@@ -79,26 +85,30 @@ export default async function AdminPage({
           Where every location stands — click a card to open its full board.
         </p>
         <div className="loc-grid">
-          {activeRoster.map((f) => {
-            const board = boardsByFranchisee.get(f.id) ?? [];
+          {(locations ?? []).map((loc) => {
+            const board = boardsByLocation.get(loc.id) ?? [];
             const allTasks = board.flatMap((p) => p.tasks);
             const pct = phaseProgress(allTasks);
             const phase = currentPhase(board);
+            const members = activeRoster.filter((f) => f.location_id === loc.id);
             return (
-              <Link href={`/admin/boards/${f.id}`} className="loc-card" key={f.id}>
-                <div className="t">{f.location_name || f.email}</div>
-                <div className="m">{phase ? phase.name : "No board yet"}</div>
+              <Link href={`/admin/boards/${loc.id}`} className="loc-card" key={loc.id}>
+                <div className="t">{loc.name}</div>
+                <div className="m">
+                  {phase ? phase.name : "No board yet"} · {members.length}{" "}
+                  member{members.length === 1 ? "" : "s"}
+                </div>
                 <div className="phase-bar">
                   <div className="phase-bar-fill" style={{ width: `${pct}%` }} />
                 </div>
                 <div className="loc-stats">
                   <span>{pct}% complete</span>
                   <span>
-                    ⭐ {f.founding_members ?? 0}/{f.founding_goal ?? 100}
+                    ⭐ {loc.founding_members ?? 0}/{loc.founding_goal ?? 100}
                   </span>
                   <span>
-                    {f.grand_opening
-                      ? `GO ${new Date(f.grand_opening + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })}`
+                    {loc.grand_opening
+                      ? `GO ${new Date(loc.grand_opening + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })}`
                       : "GO tbd"}
                   </span>
                 </div>
@@ -158,8 +168,9 @@ export default async function AdminPage({
             <h2>Franchisee roster</h2>
           </div>
           <p className="panel-note">
-            The roster is the login allowlist — adding someone here lets them
-            sign in. FM = founding members (shows on their dashboard).
+            The roster is the login allowlist. Adding a location creates its
+            board and its manager — managers invite their own team from their
+            Team page. Founders numbers and GO dates live on each board.
           </p>
           <RosterManager roster={(roster ?? []) as Franchisee[]} meId={franchisee.id} />
         </section>
@@ -192,7 +203,7 @@ export default async function AdminPage({
                       {" "}
                       · waiting on{" "}
                       {waiting
-                        .map((f) => f.location_name || f.email)
+                        .map((f) => f.locations?.name || f.email)
                         .join(", ")}
                     </span>
                   )}
