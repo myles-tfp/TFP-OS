@@ -46,15 +46,15 @@ export default async function AdminBoardPage({
   return (
     <>
       <div className="page-head">
-        <h1>{isTemplate ? "Template board" : location?.name}</h1>
+        <h1>{isTemplate ? "Checklist Template" : location?.name}</h1>
         <Link href="/admin" className="link" style={{ fontSize: 13, color: "var(--dillball)" }}>
           ← Back to admin
         </Link>
       </div>
       <p className="subtitle">
         {isTemplate
-          ? "Every new location starts with a copy of this board. Changes here don't affect existing boards."
-          : "This location's onboarding board — phases, tasks, owners, due dates."}
+          ? "Every new location starts with a copy of this checklist. Changes here don't affect existing locations."
+          : "This location's checklist — phases, tasks, owners, due dates."}
       </p>
 
       {location && <BoardMeta location={location} />}

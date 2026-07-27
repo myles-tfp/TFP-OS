@@ -3,6 +3,7 @@ import Link from "next/link";
 import { NavItem } from "@/components/nav-item";
 import { ChatNavItem } from "@/components/chat";
 import type { Franchisee } from "@/lib/types";
+import pkg from "@/package.json";
 
 export type Topic = {
   id: string;
@@ -32,7 +33,7 @@ export function Sidebar({
           height={78}
           priority
         />
-        <div className="os-tag">Operating System v1.0.0</div>
+        <div className="os-tag">Operating System v{pkg.version}</div>
       </div>
 
       <div className="nav-group">
@@ -40,18 +41,25 @@ export function Sidebar({
         <NavItem name="Home" href="/" />
         <NavItem name="Saved" href="/saved" />
         <ChatNavItem unread={chatUnread} />
+        {topics
+          .filter((t) => t.name === "Resources")
+          .map((t) => (
+            <NavItem key={t.id} name={t.name} href={`/boards/${t.id}`} />
+          ))}
       </div>
 
       <div className="nav-group">
         <p className="nav-label">Boards</p>
-        {topics.map((t) => (
-          <NavItem
-            key={t.id}
-            name={t.name}
-            href={t.status === "live" ? `/boards/${t.id}` : null}
-            soon={t.status !== "live"}
-          />
-        ))}
+        {topics
+          .filter((t) => t.name !== "Resources")
+          .map((t) => (
+            <NavItem
+              key={t.id}
+              name={t.name}
+              href={t.status === "live" ? `/boards/${t.id}` : null}
+              soon={t.status !== "live"}
+            />
+          ))}
       </div>
 
       {(isAdmin || isManager) && (

@@ -14,6 +14,16 @@ franchisees log in to run their location.
   to `supabase/migrations/`. Never assume you can run SQL directly.
 
 ## Hard rules
+- DATA SAFETY IS SACRED. Code deploys never touch the database. SQL
+  migrations must be additive (new tables/columns/policies) — never DROP,
+  DELETE, or TRUNCATE user data. If a destructive step is truly needed,
+  flag it loudly with ⚠️, explain what's lost, and get Myles's explicit
+  yes first. Remind him to take a Supabase backup before destructive runs.
+  (Supabase Pro has daily backups — recommended before franchisee launch.)
+- VERSIONING (semver, shown in the sidebar from package.json):
+  bump PATCH (x.x.N) for small tweaks — text, colors, styling, card moves;
+  bump MINOR (x.N.0) for new features or notable changes;
+  bump MAJOR (N.0.0) for platform-level overhauls. Bump on every push.
 - Run `next build` successfully BEFORE every push. Never push unverified code.
 - Never commit secrets. Env vars: `NEXT_PUBLIC_SUPABASE_URL`,
   `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `ANTHROPIC_API_KEY` (in `.env.local` + Vercel).

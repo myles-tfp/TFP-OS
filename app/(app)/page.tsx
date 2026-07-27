@@ -2,8 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getFranchisee, locationName } from "@/lib/get-franchisee";
 import { Feed, type FeedPost } from "@/components/feed";
-import { ResourceRow, type Resource } from "@/components/resource-row";
 import { BoardEditor } from "@/components/board-editor";
+import { NotesBoard, type Note } from "@/components/notes-board";
 import { currentPhase, phaseProgress, type BoardPhase } from "@/lib/board";
 
 export default async function HomePage({
@@ -15,15 +15,13 @@ export default async function HomePage({
   const { tab } = await searchParams;
   const supabase = await createClient();
 
-  const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
   const loc = franchisee.locations;
 
   const [
     { data: posts },
     { data: rosterCount },
-    { data: resources },
+    { data: notes },
     { data: saves },
-    { count: newResourceCount },
     { data: myPhases },
   ] = await Promise.all([
     supabase
@@ -32,18 +30,10 @@ export default async function HomePage({
         "id, title, body, media_url, media_type, requires_action, created_at, topics(name), reactions(franchisee_id, emoji, franchisees(location_name, email))"
       )
       .order("created_at", { ascending: false })
-      .limit(20),
+      .limit(30),
     supabase.rpc("roster_count"),
-    supabase
-      .from("resources")
-      .select("id, title, type, url, updated_at, topics(name)")
-      .order("updated_at", { ascending: false })
-      .limit(5),
+    supabase.from("notes").select("*").order("created_at"),
     supabase.from("saves").select("post_id, resource_id"),
-    supabase
-      .from("resources")
-      .select("id", { count: "exact", head: true })
-      .gte("updated_at", weekAgo),
     franchisee.location_id
       ? supabase
           .from("phases")
@@ -58,9 +48,6 @@ export default async function HomePage({
   const savedPostIds = (saves ?? [])
     .map((s) => s.post_id)
     .filter(Boolean) as string[];
-  const savedResourceIds = new Set(
-    (saves ?? []).map((s) => s.resource_id).filter(Boolean)
-  );
 
   const allPosts = (posts ?? []) as unknown as FeedPost[];
   const unread = allPosts.filter(
@@ -72,9 +59,28 @@ export default async function HomePage({
     ...p,
     tasks: [...p.tasks].sort((a, b) => a.sort_order - b.sort_order),
   }));
-  const phase = currentPhase(board);
-  const phaseShort = phase ? phase.name.split("—")[0].trim() : "—";
   const boardPct = phaseProgress(board.flatMap((p) => p.tasks));
+
+  // "Club Operating" = every task in the official (non-marketing) phases done
+  const official = board.filter((p) => p.tag !== "marketing" && p.tasks.length > 0);
+  const clubOperating =
+    official.length > 0 &&
+    official.every((p) => p.tasks.every((t) => t.status === "done"));
+  const phase = currentPhase(official);
+  const phaseShort = clubOperating
+    ? "Club Operating"
+    : phase
+      ? phase.name.split("—")[0].trim()
+      : "—";
+
+  // 6-month marketing plan: current month + that month's progress
+  const marketing = board.filter((p) => p.tag === "marketing" && p.tasks.length > 0);
+  const mPhase = currentPhase(marketing);
+  const mShort = mPhase ? mPhase.name.split("—")[0].trim() : "—";
+  const mPct = mPhase ? phaseProgress(mPhase.tasks) : 0;
+  const marketingDone =
+    marketing.length > 0 &&
+    marketing.every((p) => p.tasks.every((t) => t.status === "done"));
 
   let goCountdown = "grand opening date TBD";
   if (loc?.grand_opening) {
@@ -143,31 +149,35 @@ export default async function HomePage({
         </>
       ) : (
         <>
-          <section className="stats">
+          <section className="stats" style={{ gridTemplateColumns: `repeat(${clubOperating ? 2 : 3}, 1fr)` }}>
             <div className="stat accent">
               <div className="k">Your phase</div>
               <div className="v" style={{ fontSize: phaseShort.length > 10 ? 28 : 40 }}>
                 {phaseShort}
               </div>
-              <div className="sub">{goCountdown}</div>
-            </div>
-            <div className="stat">
-              <div className="k">Founding members</div>
-              <div className="v">{loc?.founding_members ?? "—"}</div>
-              <div className="sub">goal: {loc?.founding_goal ?? 100} by launch</div>
-            </div>
-            <div className="stat">
-              <div className="k">New resources</div>
-              <div className="v">{newResourceCount ?? 0}</div>
-              <div className="sub">added this week</div>
-            </div>
-            <div className={`stat${unread.length > 0 ? " warn" : ""}`}>
-              <div className="k">Needs your read</div>
-              <div className="v">{unread.length}</div>
               <div className="sub">
-                {unread.length === 0 ? "all caught up 🎉" : "unread updates below"}
+                {clubOperating ? "all phases complete 🎉" : goCountdown}
               </div>
             </div>
+            <div className="stat">
+              <div className="k">6-Mo marketing plan</div>
+              <div className="v" style={{ fontSize: mShort.length > 10 ? 28 : 40 }}>
+                {marketingDone ? "Complete" : mShort}
+              </div>
+              <div className="phase-bar" style={{ maxWidth: "none", margin: "8px 0 4px" }}>
+                <div className="phase-bar-fill" style={{ width: `${marketingDone ? 100 : mPct}%` }} />
+              </div>
+              <div className="sub">
+                {marketingDone ? "every month checked off 🎉" : `${mPct}% of this month done`}
+              </div>
+            </div>
+            {!clubOperating && (
+              <div className="stat">
+                <div className="k">Founding members</div>
+                <div className="v">{loc?.founding_members ?? "—"}</div>
+                <div className="sub">goal: {loc?.founding_goal ?? 100} by launch</div>
+              </div>
+            )}
           </section>
 
           {banner && (
@@ -188,46 +198,31 @@ export default async function HomePage({
           <div className="cols">
             <section className="panel">
               <div className="panel-head">
-                <h2>From the franchisor</h2>
+                <h2>Announcements</h2>
               </div>
               <p className="panel-note">
                 React to confirm you&apos;ve read each update — we track reads
                 by reaction.
               </p>
-              <Feed
-                posts={allPosts}
-                meId={franchisee.id}
-                isAdmin={franchisee.role === "admin"}
-                savedPostIds={savedPostIds}
-                rosterCount={rosterCount ?? 1}
-              />
+              <div className="feed-scroll">
+                <Feed
+                  posts={allPosts}
+                  meId={franchisee.id}
+                  isAdmin={franchisee.role === "admin"}
+                  savedPostIds={savedPostIds}
+                  rosterCount={rosterCount ?? 1}
+                />
+              </div>
             </section>
 
             <section className="panel">
               <div className="panel-head">
-                <h2>Latest resources</h2>
+                <h2>Doodle board</h2>
               </div>
-              {(resources ?? []).length === 0 ? (
-                <p className="panel-note">
-                  No resources yet — HQ adds them from the Admin page and they
-                  show up here.
-                </p>
-              ) : (
-                <>
-                  <p className="panel-note">
-                    The newest additions across every board.
-                  </p>
-                  {(resources ?? []).map((r) => (
-                    <ResourceRow
-                      key={r.id}
-                      resource={r as unknown as Resource}
-                      meId={franchisee.id}
-                      saved={savedResourceIds.has(r.id)}
-                      isAdmin={franchisee.role === "admin"}
-                    />
-                  ))}
-                </>
-              )}
+              <NotesBoard
+                notes={(notes ?? []) as unknown as Note[]}
+                meId={franchisee.id}
+              />
             </section>
           </div>
         </>

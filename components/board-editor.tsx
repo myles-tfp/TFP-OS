@@ -29,9 +29,8 @@ export function BoardEditor({
 }) {
   const router = useRouter();
   const supabase = createClient();
-  const [openPhases, setOpenPhases] = useState<Set<string>>(
-    () => new Set(phases.slice(0, 2).map((p) => p.id))
-  );
+  // all phases start collapsed so the whole journey is visible at a glance
+  const [openPhases, setOpenPhases] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
   const [removing, setRemoving] = useState<
     { kind: "phase" | "task"; id: string; label: string } | null

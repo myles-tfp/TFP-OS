@@ -21,6 +21,8 @@ type ChatMessage = {
   body: string;
   created_at: string;
   edited_at: string | null;
+  media_url: string | null;
+  media_type: string | null;
   franchisees: Author | null;
   chat_reactions: { franchisee_id: string; emoji: string }[];
 };
@@ -32,6 +34,7 @@ type Channel = {
   name: string;
   sort_order: number;
   location_id: string;
+  archived: boolean;
   locations: { name: string } | null;
 };
 
@@ -102,6 +105,7 @@ export function ChatPanel({
   const [busy, setBusy] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [attachment, setAttachment] = useState<File | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const activeRef = useRef<string | null>(null);
@@ -143,7 +147,7 @@ export function ChatPanel({
     const [{ data: chans }, { data: reads }] = await Promise.all([
       supabase
         .from("chat_channels")
-        .select("id, name, sort_order, location_id, locations(name)")
+        .select("id, name, sort_order, location_id, archived, locations(name)")
         .order("sort_order"),
       supabase.from("chat_reads").select("channel_id, last_read_at"),
     ]);
@@ -178,7 +182,7 @@ export function ChatPanel({
       const { data } = await supabase
         .from("chat_messages")
         .select(
-          "id, channel_id, author_id, body, created_at, edited_at, franchisees(display_name, email, avatar_url, locations(name)), chat_reactions(franchisee_id, emoji)"
+          "id, channel_id, author_id, body, created_at, edited_at, media_url, media_type, franchisees(display_name, email, avatar_url, locations(name)), chat_reactions(franchisee_id, emoji)"
         )
         .eq("channel_id", channelId)
         .order("created_at", { ascending: true })
@@ -260,17 +264,64 @@ export function ChatPanel({
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
-    if (!text || !activeId || busy) return;
+    if ((!text && !attachment) || !activeId || busy) return;
     setBusy(true);
     setDraft("");
+
+    let media_url: string | null = null;
+    let media_type: string | null = null;
+    if (attachment) {
+      // stored exactly as uploaded — no compression
+      const safe = attachment.name.replace(/[^\w.\-]+/g, "_");
+      const path = `chat/${meId}-${Date.now()}-${safe}`;
+      const { error: upErr } = await supabase.storage
+        .from("media")
+        .upload(path, attachment, { upsert: true });
+      if (upErr) {
+        window.alert(`Upload failed: ${upErr.message}`);
+        setBusy(false);
+        return;
+      }
+      const { data } = supabase.storage.from("media").getPublicUrl(path);
+      media_url = data.publicUrl;
+      media_type = attachment.type.startsWith("video") ? "video" : "image";
+      setAttachment(null);
+    }
+
     const { error } = await supabase.from("chat_messages").insert({
       channel_id: activeId,
       author_id: meId,
-      body: text,
+      body: text || (media_type === "video" ? "📹" : "🖼️"),
+      media_url,
+      media_type,
     });
     if (error) window.alert(`Couldn't send: ${error.message}`);
     await loadMessages(activeId);
     setBusy(false);
+  };
+
+  const archiveChannel = async (c: Channel) => {
+    if (
+      !window.confirm(
+        `Archive # ${c.name}? Nobody can post in it anymore, and only HQ can bring it back. The conversation history is kept.`
+      )
+    )
+      return;
+    const { error } = await supabase
+      .from("chat_channels")
+      .update({ archived: true })
+      .eq("id", c.id);
+    if (error) window.alert(`Couldn't archive: ${error.message}`);
+    void loadChannels();
+  };
+
+  const restoreChannel = async (c: Channel) => {
+    const { error } = await supabase
+      .from("chat_channels")
+      .update({ archived: false })
+      .eq("id", c.id);
+    if (error) window.alert(`Couldn't restore: ${error.message}`);
+    void loadChannels();
   };
 
   const saveEdit = async () => {
@@ -343,7 +394,11 @@ export function ChatPanel({
   const railChannels = channels.filter(
     (c) =>
       c.location_id === selLoc &&
+      !c.archived &&
       (!term || c.name.toLowerCase().includes(term))
+  );
+  const archivedChannels = channels.filter(
+    (c) => c.location_id === selLoc && c.archived
   );
 
   const active = channels.find((c) => c.id === activeId);
@@ -378,17 +433,28 @@ export function ChatPanel({
 
         <p className="nav-label" style={{ margin: "2px 0 8px 6px" }}>Channels</p>
         {railChannels.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            className={`chat-chan${c.id === activeId ? " on" : ""}`}
-            onClick={() => setActiveId(c.id)}
-          >
-            <span># {c.name}</span>
-            {(unread[c.id] ?? 0) > 0 && (
-              <span className="chat-unread">{unread[c.id]}</span>
+          <div className="chat-chan-row" key={c.id}>
+            <button
+              type="button"
+              className={`chat-chan${c.id === activeId ? " on" : ""}`}
+              onClick={() => setActiveId(c.id)}
+            >
+              <span># {c.name}</span>
+              {(unread[c.id] ?? 0) > 0 && (
+                <span className="chat-unread">{unread[c.id]}</span>
+              )}
+            </button>
+            {(isAdmin || (canManage && c.location_id === myLocationId)) && (
+              <button
+                type="button"
+                className="chat-archive-btn"
+                title="Archive channel"
+                onClick={() => archiveChannel(c)}
+              >
+                🗄
+              </button>
             )}
-          </button>
+          </div>
         ))}
         {selLoc && (isAdmin || (canManage && selLoc === myLocationId)) && (
           <button
@@ -399,6 +465,31 @@ export function ChatPanel({
           >
             + New channel
           </button>
+        )}
+
+        {isAdmin && archivedChannels.length > 0 && (
+          <details className="chat-archived">
+            <summary>Archived ({archivedChannels.length})</summary>
+            {archivedChannels.map((c) => (
+              <div className="chat-chan-row" key={c.id}>
+                <button
+                  type="button"
+                  className={`chat-chan archived${c.id === activeId ? " on" : ""}`}
+                  onClick={() => setActiveId(c.id)}
+                >
+                  <span># {c.name}</span>
+                </button>
+                <button
+                  type="button"
+                  className="chat-archive-btn"
+                  title="Restore channel"
+                  onClick={() => restoreChannel(c)}
+                >
+                  ↩
+                </button>
+              </div>
+            ))}
+          </details>
         )}
       </div>
 
@@ -523,7 +614,29 @@ export function ChatPanel({
                         </div>
                       </div>
                     ) : (
-                      <div className="chat-msg-text">{renderBody(m.body)}</div>
+                      <>
+                        <div className="chat-msg-text">{renderBody(m.body)}</div>
+                        {m.media_url && (
+                          <div className="chat-attach">
+                            {m.media_type === "video" ? (
+                              <video src={m.media_url} controls preload="metadata" />
+                            ) : (
+                              <a href={m.media_url} target="_blank" rel="noreferrer">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={m.media_url} alt="" />
+                              </a>
+                            )}
+                            <a
+                              className="chat-attach-dl"
+                              href={m.media_url}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Download original
+                            </a>
+                          </div>
+                        )}
+                      </>
                     )}
                     <div className="chat-msg-reacts">
                       {Object.entries(counts).map(([emoji, c]) => (
@@ -559,6 +672,13 @@ export function ChatPanel({
           </div>
         )}
 
+        {active?.archived ? (
+          <div className="chat-input-wrap" style={{ padding: "14px 16px" }}>
+            <p className="panel-note" style={{ margin: 0 }}>
+              🗄 This channel is archived — read-only paper trail.
+            </p>
+          </div>
+        ) : (
         <form className="chat-input-wrap" onSubmit={send}>
           <div className="chat-toolbar">
             <button
@@ -577,6 +697,27 @@ export function ChatPanel({
             >
               I
             </button>
+            <label className="fmt-btn" title="Attach photo or video (original quality)" style={{ cursor: "pointer" }}>
+              📎
+              <input
+                type="file"
+                accept="image/*,video/*"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) setAttachment(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            {attachment && (
+              <span className="chat-attach-chip">
+                {attachment.name.slice(0, 24)}
+                <button type="button" onClick={() => setAttachment(null)} title="Remove">
+                  ✕
+                </button>
+              </span>
+            )}
             <span className="chat-hint">Enter to send · Shift+Enter for a new line</span>
           </div>
           <div className="rally-input" style={{ borderTop: "none", paddingTop: 0 }}>
@@ -589,11 +730,16 @@ export function ChatPanel({
               placeholder={`Message # ${active?.name ?? ""}… (@ to tag)`}
               aria-label="Chat message"
             />
-            <button type="submit" className="btn" disabled={!draft.trim() || busy}>
-              Send
+            <button
+              type="submit"
+              className="btn"
+              disabled={(!draft.trim() && !attachment) || busy}
+            >
+              {busy ? "Sending…" : "Send"}
             </button>
           </div>
         </form>
+        )}
       </div>
     </aside>
   );

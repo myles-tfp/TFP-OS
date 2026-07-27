@@ -550,6 +550,96 @@ a { color: inherit; }
 .loc-card .phase-bar { max-width: none; margin-bottom: 8px; }
 .loc-stats { display: flex; justify-content: space-between; gap: 8px; font-size: 10.5px; color: var(--backcourt); flex-wrap: wrap; }
 
+/* announcements feed: show a few posts, scroll for history */
+.feed-scroll { max-height: 620px; overflow-y: auto; padding-right: 6px; }
+
+/* ============================================================
+   DOODLE BOARD (notes)
+   ============================================================ */
+.note-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.note-tabs .tab { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.note-title {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--baseline); font-family: var(--font-heading);
+  font-size: 20px; letter-spacing: .03em; min-width: 0;
+  border-bottom: 1px dashed transparent;
+}
+.note-title:focus { border-bottom-color: rgba(190, 229, 21, .4); }
+.note-box {
+  border: 1px solid var(--line); border-radius: 12px;
+  background: rgba(255, 255, 255, .03);
+  resize: vertical; overflow: auto; min-height: 140px;
+  display: flex;
+}
+.note-edit {
+  flex: 1; background: none; border: none; outline: none; resize: none;
+  color: var(--flapjack); font-family: var(--font-body); font-size: 13px;
+  line-height: 1.7; padding: 12px 14px;
+}
+.note-view {
+  flex: 1; padding: 12px 14px; cursor: text;
+  color: var(--flapjack); font-size: 13px; line-height: 1.7;
+  font-weight: 300; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.note-check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.note-check input { accent-color: var(--dillball); width: 14px; height: 14px; flex-shrink: 0; }
+.note-check .done { text-decoration: line-through; color: var(--backcourt); }
+.note-media { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 12px; }
+.note-media-item { position: relative; }
+.note-media-item img, .note-media-item video {
+  width: 100%; border-radius: 8px; border: 1px solid var(--line); display: block;
+}
+.note-media-x {
+  position: absolute; top: 4px; right: 4px; width: 20px; height: 20px;
+  border-radius: 6px; background: rgba(4, 16, 28, .8); border: none;
+  color: #fff; font-size: 10px; cursor: pointer;
+}
+.note-hint { font-size: 10.5px; color: var(--backcourt); margin-top: 8px; }
+.note-hint code, .note-view code {
+  background: rgba(255, 255, 255, .07); border-radius: 4px; padding: 0 4px;
+  font-size: 10.5px;
+}
+
+/* ============================================================
+   CHAT: attachments + archive
+   ============================================================ */
+.chat-chan-row { display: flex; align-items: center; gap: 2px; }
+.chat-chan-row .chat-chan { flex: 1; min-width: 0; }
+.chat-archive-btn {
+  background: none; border: none; color: var(--backcourt);
+  cursor: pointer; font-size: 12px; padding: 2px 4px; border-radius: 6px;
+  opacity: 0; transition: opacity .15s;
+}
+.chat-chan-row:hover .chat-archive-btn { opacity: 1; }
+.chat-archive-btn:hover { color: var(--dillball); }
+.chat-chan.archived { opacity: .5; }
+.chat-archived { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+.chat-archived summary {
+  font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--backcourt); cursor: pointer; padding: 4px 6px; list-style: none;
+}
+.chat-archived summary::-webkit-details-marker { display: none; }
+.chat-attach { margin-top: 8px; max-width: 300px; }
+.chat-attach img, .chat-attach video {
+  width: 100%; border-radius: 10px; border: 1px solid var(--line); display: block;
+}
+.chat-attach-dl {
+  display: inline-block; margin-top: 5px; font-size: 11px;
+  color: var(--dillball); text-decoration: none;
+  border: 1px solid rgba(190, 229, 21, .3); border-radius: 8px; padding: 4px 10px;
+}
+.chat-attach-dl:hover { border-color: var(--dillball); }
+.chat-attach-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(190, 229, 21, .12); border: 1px solid rgba(190, 229, 21, .35);
+  color: var(--dillball); border-radius: 12px; padding: 3px 10px; font-size: 11px;
+}
+.chat-attach-chip button {
+  background: none; border: none; color: var(--dillball); cursor: pointer;
+  font-size: 10px; padding: 0;
+}
+
 /* ============================================================
    STATUS CALENDAR
    ============================================================ */

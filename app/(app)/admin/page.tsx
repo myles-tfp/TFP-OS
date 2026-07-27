@@ -16,6 +16,7 @@ const TABS = [
   ["post", "Post"],
   ["resource", "Resource"],
   ["board", "Board"],
+  ["checklist", "Checklist"],
   ["roster", "Roster"],
 ] as const;
 
@@ -242,43 +243,44 @@ export default async function AdminPage({
       )}
 
       {tab === "board" && (
-        <div className="cols" style={{ alignItems: "start" }}>
-          <section className="panel">
-            <div className="panel-head">
-              <h2>Template board</h2>
+        <section className="panel" style={{ maxWidth: 520 }}>
+          <div className="panel-head">
+            <h2>New board</h2>
+          </div>
+          <p className="panel-note">
+            Boards appear in everyone&apos;s sidebar and hold a how-to
+            description plus resources for one topic.
+          </p>
+          <form action={createBoard}>
+            <div className="field">
+              <label htmlFor="b-name">Name</label>
+              <input id="b-name" name="name" type="text" required placeholder="Training" />
             </div>
-            <p className="panel-note">
-              Every new location starts with a copy of the template — phases,
-              tasks, and the 6-month marketing plan.
-            </p>
-            <Link href="/admin/boards/template" className="btn" style={{ textDecoration: "none", display: "inline-block" }}>
-              Edit template board
-            </Link>
-          </section>
+            <label className="check" style={{ marginBottom: 14 }}>
+              <input type="checkbox" name="coming_soon" />
+              Grayed out for now (&quot;coming soon&quot;)
+            </label>
+            <button type="submit" className="btn ghost">
+              Add board
+            </button>
+          </form>
+        </section>
+      )}
 
-          <section className="panel">
-            <div className="panel-head">
-              <h2>New board</h2>
-            </div>
-            <p className="panel-note">
-              Boards appear in everyone&apos;s sidebar and collect posts +
-              resources on one topic.
-            </p>
-            <form action={createBoard}>
-              <div className="field">
-                <label htmlFor="b-name">Name</label>
-                <input id="b-name" name="name" type="text" required placeholder="Training" />
-              </div>
-              <label className="check" style={{ marginBottom: 14 }}>
-                <input type="checkbox" name="coming_soon" />
-                Grayed out for now (&quot;coming soon&quot;)
-              </label>
-              <button type="submit" className="btn ghost">
-                Add board
-              </button>
-            </form>
-          </section>
-        </div>
+      {tab === "checklist" && (
+        <section className="panel" style={{ maxWidth: 520 }}>
+          <div className="panel-head">
+            <h2>Checklist Template</h2>
+          </div>
+          <p className="panel-note">
+            Every new location starts with a copy of this checklist — the
+            official phases plus the 6-month marketing plan. Editing it only
+            affects future locations.
+          </p>
+          <Link href="/admin/boards/template" className="btn" style={{ textDecoration: "none", display: "inline-block" }}>
+            Edit Checklist Template
+          </Link>
+        </section>
       )}
 
       {tab === "roster" && (
