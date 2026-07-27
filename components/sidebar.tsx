@@ -20,7 +20,7 @@ export function Sidebar({
   topics: Topic[];
   chatUnread?: number;
 }) {
-  const isAdmin = franchisee.role === "admin";
+  const isAdmin = franchisee.role === "admin" || franchisee.role === "owner";
   const isManager = franchisee.location_role === "manager" && !!franchisee.location_id;
 
   return (
@@ -33,7 +33,7 @@ export function Sidebar({
           height={78}
           priority
         />
-        <div className="os-tag">Operating System v{pkg.version}</div>
+        <div className="os-tag">Operating System v{pkg.version} · Beta</div>
       </div>
 
       <div className="nav-group">
@@ -81,7 +81,13 @@ export function Sidebar({
         </form>
         <div className="role-pill">
           <span className="dot" />
-          {isAdmin ? "Admin" : franchisee.location_role === "manager" ? "Manager" : "Team member"}
+          {franchisee.role === "owner"
+            ? "Account Owner"
+            : isAdmin
+              ? "Admin"
+              : franchisee.location_role === "manager"
+                ? "Manager"
+                : "Team member"}
         </div>
       </div>
     </aside>

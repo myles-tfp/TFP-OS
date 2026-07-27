@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getFranchisee } from "@/lib/get-franchisee";
+import { getFranchisee, isAdminRole } from "@/lib/get-franchisee";
 import { BoardEditor } from "@/components/board-editor";
 import { BoardMeta } from "@/components/board-meta";
 import type { BoardPhase } from "@/lib/board";
@@ -14,7 +14,7 @@ export default async function AdminBoardPage({
   params: Promise<{ id: string }>;
 }) {
   const me = await getFranchisee();
-  if (me.role !== "admin") redirect("/");
+  if (!isAdminRole(me)) redirect("/");
 
   const { id } = await params;
   const isTemplate = id === "template";

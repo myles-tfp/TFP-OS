@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getFranchisee } from "@/lib/get-franchisee";
+import { getFranchisee, isAdminRole } from "@/lib/get-franchisee";
 import { PostComposer, type EditablePost } from "@/components/post-composer";
 
 export default async function EditPostPage({
@@ -9,7 +9,7 @@ export default async function EditPostPage({
   params: Promise<{ id: string }>;
 }) {
   const franchisee = await getFranchisee();
-  if (franchisee.role !== "admin") redirect("/");
+  if (!isAdminRole(franchisee)) redirect("/");
 
   const { id } = await params;
   const supabase = await createClient();

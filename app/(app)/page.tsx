@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getFranchisee, locationName } from "@/lib/get-franchisee";
+import { getFranchisee, locationName, isAdminRole } from "@/lib/get-franchisee";
 import { Feed, type FeedPost } from "@/components/feed";
 import { BoardEditor } from "@/components/board-editor";
 import { NotesBoard, type Note } from "@/components/notes-board";
@@ -143,7 +143,7 @@ export default async function HomePage({
             <BoardEditor
               phases={board}
               locationId={franchisee.location_id}
-              adminMode={franchisee.role === "admin"}
+              adminMode={isAdminRole(franchisee)}
             />
           )}
         </>
@@ -208,7 +208,7 @@ export default async function HomePage({
                 <Feed
                   posts={allPosts}
                   meId={franchisee.id}
-                  isAdmin={franchisee.role === "admin"}
+                  isAdmin={isAdminRole(franchisee)}
                   savedPostIds={savedPostIds}
                   rosterCount={rosterCount ?? 1}
                 />
@@ -217,7 +217,7 @@ export default async function HomePage({
 
             <section className="panel">
               <div className="panel-head">
-                <h2>Doodle board</h2>
+                <h2>Notes</h2>
               </div>
               <NotesBoard
                 notes={(notes ?? []) as unknown as Note[]}

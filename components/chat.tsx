@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { memberTitle, initials } from "@/lib/identity";
 import { timeAgo } from "@/lib/format";
+import { IconDots } from "@/components/icons";
 
 const EMOJIS = ["👍", "🔥", "✅"];
 
@@ -106,6 +107,7 @@ export function ChatPanel({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
+  const [chanMenu, setChanMenu] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const activeRef = useRef<string | null>(null);
@@ -433,28 +435,17 @@ export function ChatPanel({
 
         <p className="nav-label" style={{ margin: "2px 0 8px 6px" }}>Channels</p>
         {railChannels.map((c) => (
-          <div className="chat-chan-row" key={c.id}>
-            <button
-              type="button"
-              className={`chat-chan${c.id === activeId ? " on" : ""}`}
-              onClick={() => setActiveId(c.id)}
-            >
-              <span># {c.name}</span>
-              {(unread[c.id] ?? 0) > 0 && (
-                <span className="chat-unread">{unread[c.id]}</span>
-              )}
-            </button>
-            {(isAdmin || (canManage && c.location_id === myLocationId)) && (
-              <button
-                type="button"
-                className="chat-archive-btn"
-                title="Archive channel"
-                onClick={() => archiveChannel(c)}
-              >
-                🗄
-              </button>
+          <button
+            key={c.id}
+            type="button"
+            className={`chat-chan${c.id === activeId ? " on" : ""}`}
+            onClick={() => setActiveId(c.id)}
+          >
+            <span># {c.name}</span>
+            {(unread[c.id] ?? 0) > 0 && (
+              <span className="chat-unread">{unread[c.id]}</span>
             )}
-          </div>
+          </button>
         ))}
         {selLoc && (isAdmin || (canManage && selLoc === myLocationId)) && (
           <button
@@ -471,23 +462,14 @@ export function ChatPanel({
           <details className="chat-archived">
             <summary>Archived ({archivedChannels.length})</summary>
             {archivedChannels.map((c) => (
-              <div className="chat-chan-row" key={c.id}>
-                <button
-                  type="button"
-                  className={`chat-chan archived${c.id === activeId ? " on" : ""}`}
-                  onClick={() => setActiveId(c.id)}
-                >
-                  <span># {c.name}</span>
-                </button>
-                <button
-                  type="button"
-                  className="chat-archive-btn"
-                  title="Restore channel"
-                  onClick={() => restoreChannel(c)}
-                >
-                  ↩
-                </button>
-              </div>
+              <button
+                key={c.id}
+                type="button"
+                className={`chat-chan archived${c.id === activeId ? " on" : ""}`}
+                onClick={() => setActiveId(c.id)}
+              >
+                <span># {c.name}</span>
+              </button>
             ))}
           </details>
         )}
@@ -500,6 +482,43 @@ export function ChatPanel({
               ? `# ${active.name}${isAdmin && active.locations ? ` · ${active.locations.name}` : ""}`
               : "Chat"}
           </h2>
+          {active && (isAdmin || (canManage && active.location_id === myLocationId)) && (
+            <span className="chan-menu-wrap">
+              <button
+                type="button"
+                className="icon-btn"
+                title="Channel options"
+                onClick={() => setChanMenu((v) => !v)}
+              >
+                <IconDots size={14} />
+              </button>
+              {chanMenu && (
+                <span className="chan-menu">
+                  {!active.archived ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChanMenu(false);
+                        void archiveChannel(active);
+                      }}
+                    >
+                      🗄 Archive channel
+                    </button>
+                  ) : isAdmin ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChanMenu(false);
+                        void restoreChannel(active);
+                      }}
+                    >
+                      ↩ Restore channel
+                    </button>
+                  ) : null}
+                </span>
+              )}
+            </span>
+          )}
           <button
             type="button"
             className="icon-btn"

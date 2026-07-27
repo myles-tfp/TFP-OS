@@ -36,3 +36,8 @@ export async function getFranchisee(): Promise<Franchisee> {
 export function locationName(f: Franchisee): string {
   return f.locations?.name || f.location_name || f.email;
 }
+
+/** Owners have all admin powers. */
+export function isAdminRole(f: Pick<Franchisee, "role">): boolean {
+  return f.role === "admin" || f.role === "owner";
+}

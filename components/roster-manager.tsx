@@ -106,12 +106,21 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
               <div className="t">{f.locations?.name || "—"}</div>
               <div className="m">{f.email}</div>
             </div>
-            <span className="cat-pill">
-              {f.role === "admin"
-                ? "Admin"
-                : f.location_role === "manager"
-                  ? "Manager"
-                  : "User"}
+            <span
+              className="cat-pill"
+              style={
+                f.role === "owner"
+                  ? { color: "var(--dillball)", borderColor: "rgba(190,229,21,.4)" }
+                  : undefined
+              }
+            >
+              {f.role === "owner"
+                ? "Owner"
+                : f.role === "admin"
+                  ? "Admin"
+                  : f.location_role === "manager"
+                    ? "Manager"
+                    : "User"}
             </span>
             <select
               value={f.role}

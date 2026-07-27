@@ -114,6 +114,25 @@ export function IconPlay({ size }: { size?: number }) {
   );
 }
 
+export function IconCamera({ size }: { size?: number }) {
+  return (
+    <Base size={size}>
+      <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.4-2h5.2L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z" />
+      <circle cx="12" cy="13" r="3.4" />
+    </Base>
+  );
+}
+
+export function IconDots({ size }: { size?: number }) {
+  return (
+    <Base size={size}>
+      <circle cx="12" cy="5.5" r="0.9" fill="currentColor" />
+      <circle cx="12" cy="12" r="0.9" fill="currentColor" />
+      <circle cx="12" cy="18.5" r="0.9" fill="currentColor" />
+    </Base>
+  );
+}
+
 export function IconChat({ size }: { size?: number }) {
   return (
     <Base size={size}>

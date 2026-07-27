@@ -1,4 +1,4 @@
-export type Role = "franchisee" | "admin";
+export type Role = "franchisee" | "admin" | "owner";
 export type LocationRole = "manager" | "user";
 
 export interface Location {

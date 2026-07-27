@@ -2,7 +2,7 @@ import { Sidebar, type Topic } from "@/components/sidebar";
 import { RallyPanel, RallyBubble } from "@/components/rally";
 import { ChatPanel } from "@/components/chat";
 import { NotificationBell, type Notification } from "@/components/notification-bell";
-import { getFranchisee } from "@/lib/get-franchisee";
+import { getFranchisee, isAdminRole } from "@/lib/get-franchisee";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -10,7 +10,7 @@ export default async function AppLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const franchisee = await getFranchisee();
   const supabase = await createClient();
-  const isAdmin = franchisee.role === "admin";
+  const isAdmin = isAdminRole(franchisee);
 
   const [{ data: topics }, { data: notifications }, { data: chatUnread }] =
     await Promise.all([

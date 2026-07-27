@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getFranchisee } from "@/lib/get-franchisee";
+import { getFranchisee, isAdminRole } from "@/lib/get-franchisee";
 
 export async function toggleReaction(postId: string, emoji: string) {
   const franchisee = await getFranchisee();
@@ -32,7 +32,7 @@ export async function toggleReaction(postId: string, emoji: string) {
 
 export async function createBoard(formData: FormData) {
   const franchisee = await getFranchisee();
-  if (franchisee.role !== "admin") redirect("/");
+  if (!isAdminRole(franchisee)) redirect("/");
 
   const supabase = await createClient();
 

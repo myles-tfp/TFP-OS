@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getFranchisee } from "@/lib/get-franchisee";
+import { getFranchisee, isAdminRole } from "@/lib/get-franchisee";
 import { ResourceRow, type Resource } from "@/components/resource-row";
 import { BoardEditor } from "@/components/board-editor";
 import { TopicDescription } from "@/components/topic-description";
@@ -27,7 +27,7 @@ export default async function BoardPage({
   if (!board) notFound();
 
   const isMarketing = board.name.toLowerCase() === "marketing";
-  const isAdmin = franchisee.role === "admin";
+  const isAdmin = isAdminRole(franchisee);
 
   const [{ data: resources }, { data: saves }, { data: planPhases }] =
     await Promise.all([

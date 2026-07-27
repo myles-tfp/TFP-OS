@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getFranchisee } from "@/lib/get-franchisee";
+import { getFranchisee, isAdminRole } from "@/lib/get-franchisee";
 import { Feed, type FeedPost } from "@/components/feed";
 import { ResourceRow, type Resource } from "@/components/resource-row";
 
@@ -60,7 +60,7 @@ export default async function SavedPage() {
             <Feed
               posts={(posts ?? []) as unknown as FeedPost[]}
               meId={franchisee.id}
-              isAdmin={franchisee.role === "admin"}
+              isAdmin={isAdminRole(franchisee)}
               savedPostIds={postIds}
               rosterCount={rosterCount ?? 1}
             />
@@ -82,7 +82,7 @@ export default async function SavedPage() {
                 resource={r as unknown as Resource}
                 meId={franchisee.id}
                 saved
-                isAdmin={franchisee.role === "admin"}
+                isAdmin={isAdminRole(franchisee)}
               />
             ))
           )}

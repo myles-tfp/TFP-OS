@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getFranchisee } from "@/lib/get-franchisee";
+import { getFranchisee, isAdminRole } from "@/lib/get-franchisee";
 import { createBoard } from "@/app/(app)/actions";
 import { PostComposer } from "@/components/post-composer";
 import { ResourceForm } from "@/components/resource-form";
@@ -26,7 +26,7 @@ export default async function AdminPage({
   searchParams: Promise<{ tab?: string; error?: string }>;
 }) {
   const franchisee = await getFranchisee();
-  if (franchisee.role !== "admin") redirect("/");
+  if (!isAdminRole(franchisee)) redirect("/");
 
   const { tab: rawTab, error } = await searchParams;
   const tab = TABS.some(([t]) => t === rawTab) ? rawTab! : "status";

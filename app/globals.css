@@ -596,6 +596,47 @@ a { color: inherit; }
   color: #fff; font-size: 10px; cursor: pointer;
 }
 .note-hint { font-size: 10.5px; color: var(--backcourt); margin-top: 8px; }
+.note-toolbar { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
+.note-toolbar-sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; }
+.note-edit-wrap { flex: 1; display: flex; flex-direction: column; overflow: auto; }
+.note-edit-wrap .note-edit { min-height: 90px; }
+.note-edit-media { padding: 0 14px 12px; }
+.note-float {
+  display: inline-block; position: relative; max-width: 46%;
+  margin: 2px 12px 8px 0;
+}
+.note-float.right { float: right; margin: 2px 0 8px 12px; }
+.note-float.left { float: left; }
+.note-float.full { float: none; display: block; max-width: 100%; margin: 6px 0; }
+.note-float img, .note-float video {
+  width: 100%; border-radius: 8px; border: 1px solid var(--line); display: block;
+}
+.note-float-tools {
+  position: absolute; top: 4px; right: 4px; display: flex; gap: 3px;
+  opacity: 0; transition: opacity .15s;
+}
+.note-float:hover .note-float-tools { opacity: 1; }
+.note-float-tools button {
+  width: 20px; height: 20px; border-radius: 6px;
+  background: rgba(4, 16, 28, .85); border: none; color: #fff;
+  font-size: 10px; cursor: pointer;
+}
+.note-view::after { content: ""; display: block; clear: both; }
+
+/* chat channel ⋮ menu */
+.chan-menu-wrap { position: relative; display: inline-flex; }
+.chan-menu {
+  position: absolute; top: 34px; left: 0; z-index: 30;
+  background: var(--erne); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .5); overflow: hidden; min-width: 180px;
+  display: flex; flex-direction: column;
+}
+.chan-menu button {
+  background: none; border: none; color: var(--flapjack); text-align: left;
+  font-family: var(--font-body); font-size: 12.5px; padding: 10px 14px;
+  cursor: pointer;
+}
+.chan-menu button:hover { background: rgba(255, 255, 255, .06); color: #fff; }
 .note-hint code, .note-view code {
   background: rgba(255, 255, 255, .07); border-radius: 4px; padding: 0 4px;
   font-size: 10.5px;
