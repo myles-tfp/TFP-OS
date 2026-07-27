@@ -17,7 +17,7 @@ export default async function SavedPage() {
     .map((s) => s.resource_id)
     .filter(Boolean) as string[];
 
-  const [{ data: posts }, { data: rosterCount }, { data: resources }] =
+  const [{ data: posts }, { data: resources }, { data: roster }] =
     await Promise.all([
       postIds.length
         ? supabase
@@ -28,7 +28,6 @@ export default async function SavedPage() {
             .in("id", postIds)
             .order("created_at", { ascending: false })
         : Promise.resolve({ data: [] }),
-      supabase.rpc("roster_count"),
       resourceIds.length
         ? supabase
             .from("resources")
@@ -36,7 +35,25 @@ export default async function SavedPage() {
             .in("id", resourceIds)
             .order("updated_at", { ascending: false })
         : Promise.resolve({ data: [] }),
+      isAdminRole(franchisee)
+        ? supabase
+            .from("franchisees")
+            .select("id, email, display_name, locations(name)")
+            .eq("status", "active")
+        : Promise.resolve({ data: [] }),
     ]);
+
+  const readRoster = isAdminRole(franchisee)
+    ? ((roster ?? []) as unknown as {
+        id: string;
+        email: string;
+        display_name: string | null;
+        locations: { name: string } | null;
+      }[]).map((f) => ({
+        id: f.id,
+        name: f.locations?.name || f.display_name || f.email,
+      }))
+    : undefined;
 
   return (
     <>
@@ -62,7 +79,7 @@ export default async function SavedPage() {
               meId={franchisee.id}
               isAdmin={isAdminRole(franchisee)}
               savedPostIds={postIds}
-              rosterCount={rosterCount ?? 1}
+              readRoster={readRoster}
             />
           )}
         </section>

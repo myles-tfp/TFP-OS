@@ -26,7 +26,6 @@ export default async function HomePage({
 
   const [
     { data: posts },
-    { data: rosterCount },
     { data: notes },
     { data: saves },
     { data: myPhases },
@@ -38,7 +37,6 @@ export default async function HomePage({
       )
       .order("created_at", { ascending: false })
       .limit(30),
-    supabase.rpc("roster_count"),
     supabase.from("notes").select("*").order("created_at"),
     supabase.from("saves").select("post_id, resource_id"),
     franchisee.location_id
@@ -217,7 +215,6 @@ export default async function HomePage({
                   meId={franchisee.id}
                   isAdmin={isAdminRole(franchisee)}
                   savedPostIds={savedPostIds}
-                  rosterCount={rosterCount ?? 1}
                 />
               </div>
             </section>

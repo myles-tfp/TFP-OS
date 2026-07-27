@@ -24,13 +24,14 @@ export function Feed({
   meId,
   isAdmin,
   savedPostIds,
-  rosterCount,
+  readRoster,
 }: {
   posts: FeedPost[];
   meId: string;
   isAdmin: boolean;
   savedPostIds: string[];
-  rosterCount: number;
+  /** admin only: active members for the x/y read chip + who's-missing tooltip */
+  readRoster?: { id: string; name: string }[];
 }) {
   if (posts.length === 0) {
     return (
@@ -97,8 +98,17 @@ export function Feed({
               counts={counts}
               mine={mine}
               who={isAdmin ? who : undefined}
-              readCount={readers.size}
-              rosterCount={rosterCount}
+              adminRead={
+                isAdmin && readRoster
+                  ? {
+                      readers: readers.size,
+                      total: readRoster.length,
+                      waiting: readRoster
+                        .filter((f) => !readers.has(f.id))
+                        .map((f) => f.name),
+                    }
+                  : undefined
+              }
             />
           </article>
         );

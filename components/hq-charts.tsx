@@ -61,6 +61,91 @@ export function ColumnChart({
   );
 }
 
+/** Founders history: one line per location across days — plateaus tell the story. */
+export function FoundersTimeline({
+  series,
+}: {
+  series: { id: string; name: string; points: { day: string; members: number }[] }[];
+}) {
+  const days = [...new Set(series.flatMap((s) => s.points.map((p) => p.day)))].sort();
+  if (days.length === 0) return null;
+
+  const H = 200;
+  const PAD_L = 34;
+  const PAD_B = 26;
+  const PAD_T = 10;
+  const stepX = Math.max(28, Math.min(90, Math.floor(720 / Math.max(1, days.length - 1))));
+  const W = Math.max(360, PAD_L + (days.length - 1) * stepX + 30);
+  const maxY = Math.max(10, ...series.flatMap((s) => s.points.map((p) => p.members)));
+
+  const x = (day: string) => PAD_L + days.indexOf(day) * stepX;
+  const y = (v: number) => PAD_T + (1 - v / maxY) * (H - PAD_T - PAD_B);
+
+  const labelEvery = Math.max(1, Math.ceil(days.length / 8));
+
+  return (
+    <div>
+      <div className="linechart-scroll">
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Founding members over time">
+          {[0, 0.5, 1].map((g) => (
+            <g key={g}>
+              <line
+                x1={PAD_L}
+                x2={W - 8}
+                y1={y(g * maxY)}
+                y2={y(g * maxY)}
+                stroke="rgba(255,255,255,.08)"
+              />
+              <text x={2} y={y(g * maxY) + 3} fill="#74777B" fontSize="9" fontFamily="Poppins, sans-serif">
+                {Math.round(g * maxY)}
+              </text>
+            </g>
+          ))}
+          {days.map(
+            (d, i) =>
+              i % labelEvery === 0 && (
+                <text
+                  key={d}
+                  x={x(d)}
+                  y={H - 8}
+                  textAnchor="middle"
+                  fill="#74777B"
+                  fontSize="9"
+                  fontFamily="Poppins, sans-serif"
+                >
+                  {new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </text>
+              )
+          )}
+          {series.map((s) => {
+            const pts = [...s.points].sort((a, b) => a.day.localeCompare(b.day));
+            const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(p.day)},${y(p.members)}`).join(" ");
+            const color = hashColor(s.id);
+            return (
+              <g key={s.id}>
+                <path d={path} fill="none" stroke={color} strokeWidth="2" />
+                {pts.map((p) => (
+                  <circle key={p.day} cx={x(p.day)} cy={y(p.members)} r="3.4" fill={color}>
+                    <title>{`${s.name} — ${p.members} founders (${p.day})`}</title>
+                  </circle>
+                ))}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      <div className="cal-legend" style={{ borderTop: "none", paddingTop: 6 }}>
+        {series.map((s) => (
+          <span className="cal-key" key={s.id}>
+            <span className="cal-swatch" style={{ background: hashColor(s.id) }} />
+            {s.name}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Founders line: x = locations (scrolls), y = % of goal. */
 export function FoundersLine({
   points,

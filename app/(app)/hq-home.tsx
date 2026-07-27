@@ -4,8 +4,9 @@ import { Feed, type FeedPost } from "@/components/feed";
 import { BoardEditor } from "@/components/board-editor";
 import { BoardMeta } from "@/components/board-meta";
 import { StatusCalendar, type CalEvent } from "@/components/status-calendar";
-import { ColumnChart, FoundersLine, type ColumnDatum } from "@/components/hq-charts";
+import { ColumnChart, FoundersTimeline, type ColumnDatum } from "@/components/hq-charts";
 import { CreateChecklist } from "@/components/create-checklist";
+import { NotesBoard, type Note } from "@/components/notes-board";
 import { currentPhase, phaseProgress, type BoardPhase } from "@/lib/board";
 import type { Franchisee, Location } from "@/lib/types";
 
@@ -37,7 +38,9 @@ export async function HqHome({
     { data: dueTasks },
     { data: posts },
     { data: roster },
-    { data: rosterCount },
+    { data: snapshots },
+    { data: notes },
+    { data: mySaves },
   ] = await Promise.all([
     supabase.from("locations").select("*").order("name"),
     supabase
@@ -60,9 +63,19 @@ export async function HqHome({
         "id, title, body, media_url, media_type, requires_action, created_at, topics(name), reactions(franchisee_id, emoji, franchisees(location_name, email))"
       )
       .order("created_at", { ascending: false })
-      .limit(tab === "preview" ? 30 : 8),
+      .limit(30),
     supabase.from("franchisees").select("*, locations(name)").eq("status", "active"),
-    supabase.rpc("roster_count"),
+    tab === "overview"
+      ? supabase
+          .from("founders_snapshots")
+          .select("location_id, day, members")
+          .gte("day", new Date(Date.now() - 60 * 24 * 3600 * 1000).toISOString().slice(0, 10))
+          .order("day")
+      : Promise.resolve({ data: [] }),
+    tab === "overview"
+      ? supabase.from("notes").select("*").order("created_at")
+      : Promise.resolve({ data: [] }),
+    supabase.from("saves").select("post_id"),
   ]);
 
   const locs = (locations ?? []) as Location[];
@@ -135,7 +148,24 @@ export async function HqHome({
     }
   }
 
-  const founders = [...locs].sort((a, b) => a.name.localeCompare(b.name));
+  // founders history: one series per location
+  const foundersSeries = locs
+    .map((l) => ({
+      id: l.id,
+      name: l.name,
+      points: ((snapshots ?? []) as { location_id: string; day: string; members: number }[])
+        .filter((s) => s.location_id === l.id)
+        .map((s) => ({ day: s.day, members: s.members })),
+    }))
+    .filter((s) => s.points.length > 0);
+
+  const activeRosterForRead = ((roster ?? []) as Franchisee[]).map((f) => ({
+    id: f.id,
+    name: f.locations?.name || f.display_name || f.email,
+  }));
+  const savedPostIds = ((mySaves ?? []) as { post_id: string | null }[])
+    .map((s) => s.post_id)
+    .filter(Boolean) as string[];
 
   const calEvents: CalEvent[] = ((dueTasks ?? []) as unknown as {
     title: string;
@@ -232,22 +262,52 @@ export async function HqHome({
               <h2>Founding members</h2>
             </div>
             <p className="panel-note">
-              Snapshot of each location vs its goal — becomes progress-over-time
-              once PlayByPoint is connected.
+              One line per location, one point per day — plateaus mean the
+              marketing push has stalled. History records daily from here on
+              (PlayByPoint will feed this automatically later).
             </p>
-            <FoundersLine
-              points={founders.map((l) => ({
-                id: l.id,
-                name: l.name,
-                members: l.founding_members ?? 0,
-                goal: l.founding_goal ?? 100,
-              }))}
-            />
+            {foundersSeries.length === 0 ? (
+              <p className="panel-note">
+                No history yet — run the 0017 script and today becomes day one.
+              </p>
+            ) : (
+              <FoundersTimeline series={foundersSeries} />
+            )}
           </section>
+
+          <div className="cols" style={{ marginBottom: 22 }}>
+            <section className="panel">
+              <div className="panel-head">
+                <h2>Announcements</h2>
+              </div>
+              <p className="panel-note">
+                Hover the x/y chip on a post to see who hasn&apos;t read it.
+              </p>
+              <div className="feed-scroll">
+                <Feed
+                  posts={allPosts}
+                  meId={franchisee.id}
+                  isAdmin
+                  savedPostIds={savedPostIds}
+                  readRoster={activeRosterForRead}
+                />
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-head">
+                <h2>Notes</h2>
+              </div>
+              <NotesBoard
+                notes={(notes ?? []) as unknown as Note[]}
+                meId={franchisee.id}
+              />
+            </section>
+          </div>
 
           <section className="panel">
             <div className="panel-head">
-              <h2>Due dates</h2>
+              <h2>Calendar</h2>
             </div>
             <StatusCalendar events={calEvents} />
           </section>
@@ -382,7 +442,6 @@ export async function HqHome({
                     meId={franchisee.id}
                     isAdmin={false}
                     savedPostIds={[]}
-                    rosterCount={rosterCount ?? 1}
                   />
                 </div>
               </section>

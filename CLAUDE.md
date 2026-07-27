@@ -62,11 +62,22 @@ franchisees log in to run their location.
 ## Migrations so far (never re-run 0002/0003 — superseded by 0004)
 0001 franchisees/allowlist · 0002 feed · 0003 resources · 0004 boards+storage
 · 0005 saves · 0006 founding_members · 0007 phases/tasks · 0008 collections
-· 0009 notifications
+· 0009 notifications · 0010 locations/team restructure · 0011 chat
+· 0012 chat uploads/archiving · 0013 notes · 0014 board descriptions
+· 0015 profile fields · 0016 owner role (fixed version in repo — SQL editor
+runs scripts as one transaction; guard must allow current_email() = '')
+· 0017 founders_snapshots + snapshot_founders() + on-change trigger
+(daily Vercel cron hits /api/snapshot, see vercel.json)
+
+## Read tracking
+Inline admin-only x/y chip on each post (components/reactions.tsx
+`adminRead` prop; Feed passes `readRoster`). Hover = who hasn't reacted.
+No standalone panel.
 
 ## Parked / next up
 - Task comments + replies (deliberately deferred)
-- Rally AI brain (needs Anthropic API key from Myles)
 - Custom domain os.theflyingpickle.com (CNAME + Supabase URL config update)
-- Phase 2 from the brief: Google Drive folder mirroring (`resources.drive_ref`
-  is ready), PlayByPoint metrics, richer onboarding checklist
+- Phone push notifications (needs Supabase service role key)
+- Supabase Pro daily backups BEFORE franchisee launch (critical)
+- Phase 2: Google Drive folder mirroring (`resources.drive_ref` is ready),
+  PlayByPoint metrics (will feed founders_snapshots), PWA/mobile

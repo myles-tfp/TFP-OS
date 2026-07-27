@@ -15,16 +15,15 @@ export function Reactions({
   counts,
   mine,
   who,
-  readCount,
-  rosterCount,
+  adminRead,
 }: {
   postId: string;
   counts: Record<string, number>;
   mine: string[];
   /** admin only: emoji -> names of who reacted */
   who?: Record<string, string[]>;
-  readCount: number;
-  rosterCount: number;
+  /** admin only: read tracking chip (x/y with who's-missing tooltip) */
+  adminRead?: { readers: number; total: number; waiting: string[] };
 }) {
   const [, startTransition] = useTransition();
   const [optimistic, applyOptimistic] = useOptimistic<ReactionState, string>(
@@ -73,10 +72,20 @@ export function Reactions({
           </span>
         );
       })}
-      <span className="read-count">
-        Read by {readCount} of {rosterCount} franchisee
-        {rosterCount === 1 ? "" : "s"}
-      </span>
+      {adminRead && (
+        <span className="react-wrap" style={{ marginLeft: "auto" }}>
+          <span
+            className={`read-chip${adminRead.waiting.length === 0 ? " all" : ""}`}
+          >
+            {adminRead.readers}/{adminRead.total}
+          </span>
+          <span className="who-tip">
+            {adminRead.waiting.length === 0
+              ? "Everyone's read it 🎉"
+              : `Waiting on: ${adminRead.waiting.join(", ")}`}
+          </span>
+        </span>
+      )}
     </div>
   );
 }
