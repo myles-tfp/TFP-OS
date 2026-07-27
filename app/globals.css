@@ -547,6 +547,37 @@ a { color: inherit; }
 .loc-card:hover { border-color: var(--dillball); }
 .loc-card.on { border-color: var(--dillball); background: rgba(190, 229, 21, .06); }
 
+/* HQ column charts (x = locations, y = named rungs) */
+.colchart { display: flex; gap: 10px; }
+.colchart-y {
+  display: flex; flex-direction: column; justify-content: space-between;
+  height: 180px; flex-shrink: 0; text-align: right; padding-bottom: 34px;
+}
+.colchart-y span { font-size: 9.5px; color: var(--backcourt); white-space: nowrap; }
+.colchart-scroll { flex: 1; overflow-x: auto; padding-bottom: 4px; }
+.colchart-cols {
+  display: flex; gap: 10px; min-width: min-content;
+  border-left: 1px solid var(--line); padding: 0 8px;
+}
+.colchart-col {
+  display: flex; flex-direction: column; align-items: center; min-width: 54px;
+}
+.colchart-barwrap {
+  display: flex; align-items: flex-end; width: 100%;
+  justify-content: center; border-bottom: 1px solid var(--line);
+}
+.colchart-bar {
+  width: 30px; border: 1px solid; border-bottom: none;
+  border-radius: 6px 6px 0 0; cursor: default; transition: filter .15s;
+}
+.colchart-bar:hover { filter: brightness(1.3); }
+.colchart-x {
+  font-size: 9.5px; color: var(--flapjack); margin-top: 6px; max-width: 60px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.colchart-y { padding-bottom: 22px; }
+.linechart-scroll { overflow-x: auto; }
+
 /* HQ overview bars */
 .hq-bar { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
 .hq-bar-label {

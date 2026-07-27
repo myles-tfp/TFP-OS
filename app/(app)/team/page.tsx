@@ -26,19 +26,21 @@ export default async function TeamPage() {
         They can only see {locationName(me)}.
       </p>
 
-      <section className="panel" style={{ maxWidth: 640, marginBottom: 22 }}>
-        <div className="panel-head">
-          <h2>How access works</h2>
-        </div>
-        <p className="post-body" style={{ marginBottom: 0 }}>
-          TFP HQ sets up each location with its official email (like
-          yourcity@theflyingpickle.com) — that account is the location&apos;s
-          Manager. As the Manager, you invite anyone on your crew below using
-          their own email: they sign in with it, see only {locationName(me)},
-          and you can remove them anytime. No need to go through HQ for your
-          own team.
-        </p>
-      </section>
+      {!isAdminRole(me) && (
+        <section className="panel" style={{ maxWidth: 640, marginBottom: 22 }}>
+          <div className="panel-head">
+            <h2>How access works</h2>
+          </div>
+          <p className="post-body" style={{ marginBottom: 0 }}>
+            TFP HQ sets up each location with its official email (like
+            yourcity@theflyingpickle.com) — that account is the location&apos;s
+            Manager. As the Manager, you invite anyone on your crew below using
+            their own email: they sign in with it, see only {locationName(me)},
+            and you can remove them anytime. No need to go through HQ for your
+            own team.
+          </p>
+        </section>
+      )}
 
       <section className="panel" style={{ maxWidth: 640 }}>
         <TeamManager team={(team ?? []) as Franchisee[]} me={me} />

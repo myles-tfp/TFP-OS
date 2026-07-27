@@ -17,6 +17,18 @@ export function BoardMeta({ location }: { location: Location }) {
   return (
     <div className="board-meta">
       <label>
+        Location name
+        <input
+          type="text"
+          defaultValue={location.name}
+          onBlur={(e) => {
+            const v = e.target.value.trim();
+            if (v && v !== location.name) update({ name: v });
+          }}
+          title="Source of truth — renaming updates every member's title, chat, and cards across the OS"
+        />
+      </label>
+      <label>
         Grand opening
         <input
           type="date"

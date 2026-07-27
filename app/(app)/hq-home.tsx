@@ -4,7 +4,8 @@ import { Feed, type FeedPost } from "@/components/feed";
 import { BoardEditor } from "@/components/board-editor";
 import { BoardMeta } from "@/components/board-meta";
 import { StatusCalendar, type CalEvent } from "@/components/status-calendar";
-import { timeAgo } from "@/lib/format";
+import { ColumnChart, FoundersLine, type ColumnDatum } from "@/components/hq-charts";
+import { CreateChecklist } from "@/components/create-checklist";
 import { currentPhase, phaseProgress, type BoardPhase } from "@/lib/board";
 import type { Franchisee, Location } from "@/lib/types";
 
@@ -75,12 +76,32 @@ export async function HqHome({
     boardsByLocation.set(p.location_id, list);
   }
 
-  // ---- distributions for the graphs ----
-  type Dist = { name: string; order: number; locations: string[] };
-  const phaseDist = new Map<string, Dist>();
-  const monthDist = new Map<string, Dist>();
-  const OPERATING = "Club Operating";
+  // ---- column charts: x = locations, y = phase / marketing month ----
+  const phaseNameOrder = new Map<string, number>();
+  const monthNameOrder = new Map<string, number>();
+  for (const board of boardsByLocation.values()) {
+    for (const p of board) {
+      if (p.tasks.length === 0) continue;
+      const short = p.name.split("—")[0].trim();
+      if (p.tag === "marketing") {
+        if (!monthNameOrder.has(short)) monthNameOrder.set(short, p.sort_order);
+      } else if (!phaseNameOrder.has(short)) {
+        phaseNameOrder.set(short, p.sort_order);
+      }
+    }
+  }
+  const phaseSteps = [
+    "Not started",
+    ...[...phaseNameOrder.entries()].sort((a, b) => a[1] - b[1]).map(([n]) => n),
+    "Club Operating",
+  ];
+  const monthSteps = [
+    ...[...monthNameOrder.entries()].sort((a, b) => a[1] - b[1]).map(([n]) => n),
+    "Complete",
+  ];
 
+  const phaseData: ColumnDatum[] = [];
+  const monthData: ColumnDatum[] = [];
   for (const loc of locs) {
     const board = boardsByLocation.get(loc.id) ?? [];
     const official = board.filter((p) => p.tag !== "marketing" && p.tasks.length > 0);
@@ -88,46 +109,33 @@ export async function HqHome({
       official.length > 0 &&
       official.every((p) => p.tasks.every((t) => t.status === "done"));
     const cur = operating ? null : currentPhase(official);
-    const key = operating ? OPERATING : cur ? cur.name : "No checklist yet";
-    const order = operating ? 9999 : cur ? cur.sort_order : -1;
-    const d = phaseDist.get(key) ?? { name: key, order, locations: [] };
-    d.locations.push(loc.name);
-    phaseDist.set(key, d);
+    const label = operating
+      ? "Club Operating"
+      : cur
+        ? cur.name.split("—")[0].trim()
+        : "Not started";
+    phaseData.push({
+      locationId: loc.id,
+      locationName: loc.name,
+      step: Math.max(0, phaseSteps.indexOf(label)),
+      label: operating ? "Club Operating" : cur ? cur.name : "Not started",
+    });
 
     const marketing = board.filter((p) => p.tag === "marketing" && p.tasks.length > 0);
     if (marketing.length > 0) {
       const allDone = marketing.every((p) => p.tasks.every((t) => t.status === "done"));
       const m = allDone ? null : currentPhase(marketing);
-      const mKey = allDone ? "Plan complete" : m ? m.name.split("—")[0].trim() : "—";
-      const mOrder = allDone ? 9999 : m ? m.sort_order : -1;
-      const md = monthDist.get(mKey) ?? { name: mKey, order: mOrder, locations: [] };
-      md.locations.push(loc.name);
-      monthDist.set(mKey, md);
+      const mLabel = allDone ? "Complete" : m ? m.name.split("—")[0].trim() : monthSteps[0];
+      monthData.push({
+        locationId: loc.id,
+        locationName: loc.name,
+        step: Math.max(0, monthSteps.indexOf(mLabel)),
+        label: allDone ? "Plan complete" : m ? m.name : mLabel,
+      });
     }
   }
 
-  const distBars = (dist: Map<string, Dist>) => {
-    const rows = [...dist.values()].sort((a, b) => a.order - b.order);
-    const max = Math.max(1, ...rows.map((r) => r.locations.length));
-    return rows.map((r) => (
-      <div className="hq-bar" key={r.name} title={r.locations.join(", ")}>
-        <span className="hq-bar-label">{r.name.split("—")[0].trim()}</span>
-        <div className="hq-bar-track">
-          <div
-            className="hq-bar-fill"
-            style={{ width: `${(r.locations.length / max) * 100}%` }}
-          />
-        </div>
-        <span className="hq-bar-n">{r.locations.length}</span>
-      </div>
-    ));
-  };
-
-  const founders = [...locs].sort(
-    (a, b) =>
-      (b.founding_members ?? 0) / (b.founding_goal || 100) -
-      (a.founding_members ?? 0) / (a.founding_goal || 100)
-  );
+  const founders = [...locs].sort((a, b) => a.name.localeCompare(b.name));
 
   const calEvents: CalEvent[] = ((dueTasks ?? []) as unknown as {
     title: string;
@@ -197,12 +205,12 @@ export async function HqHome({
                 <h2>Locations by phase</h2>
               </div>
               <p className="panel-note">
-                Hover a bar to see which locations are in it.
+                Each column is a location — hover for details. Scrolls sideways.
               </p>
-              {phaseDist.size === 0 ? (
+              {phaseData.length === 0 ? (
                 <p className="panel-note">No location checklists yet.</p>
               ) : (
-                distBars(phaseDist)
+                <ColumnChart steps={phaseSteps} data={phaseData} />
               )}
             </section>
 
@@ -211,10 +219,10 @@ export async function HqHome({
                 <h2>6-Mo marketing plan</h2>
               </div>
               <p className="panel-note">Which month each location is working.</p>
-              {monthDist.size === 0 ? (
+              {monthData.length === 0 ? (
                 <p className="panel-note">No marketing plans in motion yet.</p>
               ) : (
-                distBars(monthDist)
+                <ColumnChart steps={monthSteps} data={monthData} />
               )}
             </section>
           </div>
@@ -223,60 +231,25 @@ export async function HqHome({
             <div className="panel-head">
               <h2>Founding members</h2>
             </div>
-            <div className="hq-founders">
-              {founders.map((l) => {
-                const pct = Math.min(
-                  100,
-                  Math.round(((l.founding_members ?? 0) / (l.founding_goal || 100)) * 100)
-                );
-                return (
-                  <div className="hq-bar" key={l.id}>
-                    <span className="hq-bar-label">{l.name}</span>
-                    <div className="hq-bar-track">
-                      <div className="hq-bar-fill" style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className="hq-bar-n">
-                      {l.founding_members ?? 0}/{l.founding_goal ?? 100}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="panel" style={{ marginBottom: 22 }}>
-            <div className="panel-head">
-              <h2>Due dates</h2>
-            </div>
-            <StatusCalendar events={calEvents} />
+            <p className="panel-note">
+              Snapshot of each location vs its goal — becomes progress-over-time
+              once PlayByPoint is connected.
+            </p>
+            <FoundersLine
+              points={founders.map((l) => ({
+                id: l.id,
+                name: l.name,
+                members: l.founding_members ?? 0,
+                goal: l.founding_goal ?? 100,
+              }))}
+            />
           </section>
 
           <section className="panel">
             <div className="panel-head">
-              <h2>Read tracking</h2>
+              <h2>Due dates</h2>
             </div>
-            {allPosts.slice(0, 8).map((p) => {
-              const readerIds = new Set(p.reactions.map((r) => r.franchisee_id));
-              const waiting = activeRoster.filter((f) => !readerIds.has(f.id));
-              return (
-                <div className="read-row" key={p.id}>
-                  <div className="read-title">
-                    {p.title || p.body.slice(0, 60)}
-                    <span className="read-when"> · {timeAgo(p.created_at)}</span>
-                  </div>
-                  <div className="read-stat">
-                    <strong>{readerIds.size}/{activeRoster.length}</strong> read
-                    {waiting.length > 0 && (
-                      <span className="read-waiting">
-                        {" "}· waiting on{" "}
-                        {waiting.map((f) => f.locations?.name || f.email).join(", ")}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            {allPosts.length === 0 && <p className="panel-note">No posts yet.</p>}
+            <StatusCalendar events={calEvents} />
           </section>
         </>
       )}
@@ -291,8 +264,13 @@ export async function HqHome({
               </Link>
             </div>
             <p className="panel-note">
-              Click a location to open its checklist right here.
+              Create a checklist at kickoff — before the location even has an
+              email. Attach their account later from Admin → Roster. Click a
+              location to open its checklist right here.
             </p>
+            <div style={{ marginBottom: 16 }}>
+              <CreateChecklist />
+            </div>
             <div className="loc-grid">
               {locs.map((loc) => {
                 const board = boardsByLocation.get(loc.id) ?? [];

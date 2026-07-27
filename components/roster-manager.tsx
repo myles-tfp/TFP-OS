@@ -8,9 +8,18 @@ import { IconPause, IconPlay, IconTrash } from "@/components/icons";
 import type { Franchisee } from "@/lib/types";
 
 /** Admin: create locations (with their manager) and manage all members. */
-export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: string }) {
+export function RosterManager({
+  roster,
+  meId,
+  locations = [],
+}: {
+  roster: Franchisee[];
+  meId: string;
+  locations?: { id: string; name: string }[];
+}) {
   const router = useRouter();
   const supabase = createClient();
+  const [locChoice, setLocChoice] = useState("new");
   const [locName, setLocName] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -23,19 +32,28 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
     setError(null);
     setNotice(null);
 
-    const { data: loc, error: locErr } = await supabase
-      .from("locations")
-      .insert({ name: locName.trim() })
-      .select("id")
-      .single();
-    if (locErr || !loc) {
-      setError(locErr?.message ?? "Couldn't create the location.");
-      return;
+    let locationId = locChoice;
+    let displayName = "";
+
+    if (locChoice === "new") {
+      const { data: loc, error: locErr } = await supabase
+        .from("locations")
+        .insert({ name: locName.trim() })
+        .select("id")
+        .single();
+      if (locErr || !loc) {
+        setError(locErr?.message ?? "Couldn't create the location.");
+        return;
+      }
+      locationId = loc.id;
+      displayName = locName.trim();
+    } else {
+      displayName = locations.find((l) => l.id === locChoice)?.name ?? "the location";
     }
 
     const { error: memErr } = await supabase.from("franchisees").insert({
       email: email.trim().toLowerCase(),
-      location_id: loc.id,
+      location_id: locationId,
       location_role: "manager",
       role: "franchisee",
     });
@@ -48,9 +66,10 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
       return;
     }
 
-    setNotice(`${locName.trim()} created — ${email.trim()} can sign in as its manager. Their board is ready.`);
+    setNotice(`${email.trim()} can now sign in as manager of ${displayName}.`);
     setLocName("");
     setEmail("");
+    setLocChoice("new");
     router.refresh();
   };
 
@@ -79,14 +98,30 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
       {error && <div className="auth-error">{error}</div>}
       {notice && <div className="auth-notice">{notice}</div>}
 
-      <form onSubmit={addLocation} className="roster-add" style={{ gridTemplateColumns: "1fr 1.3fr auto" }}>
-        <input
-          type="text"
-          required
-          placeholder="Location name (Boise)"
-          value={locName}
-          onChange={(e) => setLocName(e.target.value)}
-        />
+      <form
+        onSubmit={addLocation}
+        className="roster-add"
+        style={{
+          gridTemplateColumns: locChoice === "new" ? "auto 1fr 1.3fr auto" : "auto 1.3fr auto",
+        }}
+      >
+        <select value={locChoice} onChange={(e) => setLocChoice(e.target.value)} title="Which location?">
+          <option value="new">➕ New location…</option>
+          {locations.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </select>
+        {locChoice === "new" && (
+          <input
+            type="text"
+            required
+            placeholder="Location name (Boise)"
+            value={locName}
+            onChange={(e) => setLocName(e.target.value)}
+          />
+        )}
         <input
           type="email"
           required
@@ -95,7 +130,7 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
           onChange={(e) => setEmail(e.target.value)}
         />
         <button type="submit" className="btn">
-          Add location
+          {locChoice === "new" ? "Add location" : "Attach manager"}
         </button>
       </form>
 
@@ -123,6 +158,19 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
                     : "User"}
             </span>
             <select
+              value={f.location_id ?? ""}
+              onChange={(e) => update(f.id, { location_id: e.target.value })}
+              disabled={f.id === meId}
+              title="Move to another location"
+              style={{ maxWidth: 130 }}
+            >
+              {locations.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+            <select
               value={f.role}
               onChange={(e) => update(f.id, { role: e.target.value as Franchisee["role"] })}
               disabled={f.id === meId}
@@ -130,6 +178,9 @@ export function RosterManager({ roster, meId }: { roster: Franchisee[]; meId: st
             >
               <option value="franchisee">Franchisee</option>
               <option value="admin">Admin</option>
+              <option value="owner" disabled>
+                Owner
+              </option>
             </select>
             <button
               type="button"
