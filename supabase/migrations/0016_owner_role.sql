@@ -35,6 +35,10 @@ $$;
 create or replace function public.guard_owner_grant()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
+  -- No signed-in user = trusted context (SQL editor / server) — allow
+  if public.current_email() = '' then
+    return new;
+  end if;
   if new.role is distinct from old.role
      and (new.role = 'owner' or old.role = 'owner')
      and not public.is_owner() then
