@@ -5,14 +5,21 @@ import { Feed, type FeedPost } from "@/components/feed";
 import { BoardEditor } from "@/components/board-editor";
 import { NotesBoard, type Note } from "@/components/notes-board";
 import { currentPhase, phaseProgress, type BoardPhase } from "@/lib/board";
+import { HqHome } from "@/app/(app)/hq-home";
 
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; loc?: string }>;
 }) {
   const franchisee = await getFranchisee();
-  const { tab } = await searchParams;
+  const { tab, loc: locParam } = await searchParams;
+
+  // HQ gets the franchise-wide command center instead
+  if (isAdminRole(franchisee)) {
+    return <HqHome franchisee={franchisee} tab={tab} loc={locParam} />;
+  }
+
   const supabase = await createClient();
 
   const loc = franchisee.locations;

@@ -545,6 +545,27 @@ a { color: inherit; }
   border-radius: 12px; padding: 14px 16px; transition: border-color .15s;
 }
 .loc-card:hover { border-color: var(--dillball); }
+.loc-card.on { border-color: var(--dillball); background: rgba(190, 229, 21, .06); }
+
+/* HQ overview bars */
+.hq-bar { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.hq-bar-label {
+  width: 150px; flex-shrink: 0; font-size: 12px; color: var(--flapjack);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hq-bar-track {
+  flex: 1; height: 12px; border-radius: 7px;
+  background: rgba(255, 255, 255, .07); overflow: hidden;
+}
+.hq-bar-fill { height: 100%; background: var(--dillball); border-radius: 7px; }
+.hq-bar-n {
+  width: 52px; flex-shrink: 0; text-align: right;
+  font-size: 11.5px; color: var(--backcourt); font-weight: 600;
+}
+.hq-founders { max-height: 300px; overflow-y: auto; }
+
+/* read-only franchisee preview */
+.preview-lock { pointer-events: none; user-select: none; opacity: .92; }
 .loc-card .t { font-size: 14px; font-weight: 600; }
 .loc-card .m { font-size: 11.5px; color: var(--backcourt); margin: 3px 0 10px; }
 .loc-card .phase-bar { max-width: none; margin-bottom: 8px; }
