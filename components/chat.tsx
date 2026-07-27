@@ -108,6 +108,10 @@ export function ChatPanel({
   const [editDraft, setEditDraft] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [chanMenu, setChanMenu] = useState(false);
+  const [gifOpen, setGifOpen] = useState(false);
+  const [gifQ, setGifQ] = useState("");
+  const [gifs, setGifs] = useState<{ id: string; preview: string; full: string }[]>([]);
+  const [gifLoading, setGifLoading] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const activeRef = useRef<string | null>(null);
@@ -300,6 +304,37 @@ export function ChatPanel({
     if (error) window.alert(`Couldn't send: ${error.message}`);
     await loadMessages(activeId);
     setBusy(false);
+  };
+
+  // GIF search (debounced; trending when empty)
+  useEffect(() => {
+    if (!gifOpen) return;
+    setGifLoading(true);
+    const t = window.setTimeout(async () => {
+      try {
+        const resp = await fetch(`/api/giphy?q=${encodeURIComponent(gifQ.trim())}`);
+        const data = await resp.json();
+        setGifs(resp.ok ? data.gifs : []);
+      } catch {
+        setGifs([]);
+      }
+      setGifLoading(false);
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, [gifOpen, gifQ]);
+
+  const sendGif = async (url: string) => {
+    if (!activeId) return;
+    setGifOpen(false);
+    const { error } = await supabase.from("chat_messages").insert({
+      channel_id: activeId,
+      author_id: meId,
+      body: "",
+      media_url: url,
+      media_type: "image",
+    });
+    if (error) window.alert(`Couldn't send: ${error.message}`);
+    await loadMessages(activeId);
   };
 
   const archiveChannel = async (c: Channel) => {
@@ -699,6 +734,40 @@ export function ChatPanel({
           </div>
         ) : (
         <form className="chat-input-wrap" onSubmit={send}>
+          {gifOpen && (
+            <div className="gif-pop">
+              <div className="gif-pop-head">
+                <input
+                  type="text"
+                  value={gifQ}
+                  onChange={(e) => setGifQ(e.target.value)}
+                  placeholder="Search GIFs…"
+                  autoFocus
+                />
+                <span className="gif-credit">Powered by GIPHY</span>
+                <button type="button" className="icon-btn" onClick={() => setGifOpen(false)} title="Close">
+                  ✕
+                </button>
+              </div>
+              <div className="gif-grid">
+                {gifLoading && <p className="panel-note" style={{ padding: 8 }}>Loading…</p>}
+                {!gifLoading && gifs.length === 0 && (
+                  <p className="panel-note" style={{ padding: 8 }}>Nothing found — try another word.</p>
+                )}
+                {!gifLoading &&
+                  gifs.map((g) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={g.id}
+                      src={g.preview}
+                      alt=""
+                      loading="lazy"
+                      onClick={() => void sendGif(g.full)}
+                    />
+                  ))}
+              </div>
+            </div>
+          )}
           <div className="chat-toolbar">
             <button
               type="button"
@@ -715,6 +784,15 @@ export function ChatPanel({
               onClick={() => applyFormat("*")}
             >
               I
+            </button>
+            <button
+              type="button"
+              className="fmt-btn"
+              title="Send a GIF"
+              style={{ width: "auto", padding: "0 7px", fontSize: 10, letterSpacing: ".05em" }}
+              onClick={() => setGifOpen((v) => !v)}
+            >
+              GIF
             </button>
             <label className="fmt-btn" title="Attach photo or video (original quality)" style={{ cursor: "pointer" }}>
               📎
