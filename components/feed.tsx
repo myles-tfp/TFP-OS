@@ -15,7 +15,11 @@ export type FeedPost = {
   reactions: {
     franchisee_id: string;
     emoji: string;
-    franchisees?: { location_name: string | null; email: string } | null;
+    franchisees?: {
+      location_name: string | null;
+      email: string;
+      locations?: { name: string } | null;
+    } | null;
   }[];
 };
 
@@ -56,6 +60,7 @@ export function Feed({
           if (r.franchisee_id === meId) mine.push(r.emoji);
           if (isAdmin) {
             const name =
+              r.franchisees?.locations?.name ||
               r.franchisees?.location_name ||
               r.franchisees?.email ||
               "Unknown";

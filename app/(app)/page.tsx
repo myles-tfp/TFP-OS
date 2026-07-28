@@ -33,7 +33,7 @@ export default async function HomePage({
     supabase
       .from("posts")
       .select(
-        "id, title, body, media_url, media_type, requires_action, created_at, topics(name), reactions(franchisee_id, emoji, franchisees(location_name, email))"
+        "id, title, body, media_url, media_type, requires_action, created_at, topics(name), reactions(franchisee_id, emoji, franchisees(location_name, email, locations(name)))"
       )
       .order("created_at", { ascending: false })
       .limit(30),

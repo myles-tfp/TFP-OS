@@ -60,7 +60,7 @@ export async function HqHome({
     supabase
       .from("posts")
       .select(
-        "id, title, body, media_url, media_type, requires_action, created_at, topics(name), reactions(franchisee_id, emoji, franchisees(location_name, email))"
+        "id, title, body, media_url, media_type, requires_action, created_at, topics(name), reactions(franchisee_id, emoji, franchisees(location_name, email, locations(name)))"
       )
       .order("created_at", { ascending: false })
       .limit(30),
@@ -375,11 +375,11 @@ export async function HqHome({
                   Close
                 </Link>
               </div>
-              <BoardMeta location={selected} />
+              <BoardMeta key={selected.id} location={selected} />
               {selectedBoard.length === 0 ? (
                 <p className="panel-note">No checklist yet for this location.</p>
               ) : (
-                <BoardEditor phases={selectedBoard} locationId={selected.id} adminMode />
+                <BoardEditor key={selected.id} phases={selectedBoard} locationId={selected.id} adminMode />
               )}
             </section>
           )}
