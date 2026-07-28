@@ -73,14 +73,11 @@ export function BoardMeta({ location }: { location: Location }) {
         Founding members
         <input
           type="number"
-          min={0}
-          value={members}
-          onChange={(e) => setMembers(e.target.value)}
-          onBlur={() => {
-            const v = members === "" ? null : Number(members);
-            if (v !== (location.founding_members ?? null))
-              update({ founding_members: v });
-          }}
+          value={members === "" ? "0" : members}
+          readOnly
+          disabled
+          title="Synced from PlayByPoint — not hand-editable"
+          style={{ opacity: 0.55, cursor: "not-allowed" }}
         />
       </label>
       <label>
