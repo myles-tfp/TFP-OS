@@ -7,6 +7,8 @@ export interface Location {
   founding_members: number | null;
   founding_goal: number;
   grand_opening: string | null;
+  /** PlayByPoint facility id or exact facility name feeding this location */
+  pbp_facility?: string | null;
   created_at?: string;
 }
 

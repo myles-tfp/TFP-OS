@@ -20,6 +20,7 @@ export function BoardMeta({ location }: { location: Location }) {
     location.founding_members != null ? String(location.founding_members) : ""
   );
   const [goal, setGoal] = useState(String(location.founding_goal ?? 100));
+  const [pbp, setPbp] = useState(location.pbp_facility ?? "");
 
   // Re-sync the fields any time the selected location (or its data) changes.
   useEffect(() => {
@@ -29,12 +30,14 @@ export function BoardMeta({ location }: { location: Location }) {
       location.founding_members != null ? String(location.founding_members) : ""
     );
     setGoal(String(location.founding_goal ?? 100));
+    setPbp(location.pbp_facility ?? "");
   }, [
     location.id,
     location.name,
     location.grand_opening,
     location.founding_members,
     location.founding_goal,
+    location.pbp_facility,
   ]);
 
   const update = async (patch: Record<string, unknown>) => {
@@ -91,6 +94,20 @@ export function BoardMeta({ location }: { location: Location }) {
             const v = Number(goal) || 100;
             if (v !== location.founding_goal) update({ founding_goal: v });
           }}
+        />
+      </label>
+      <label>
+        PlayByPoint facility
+        <input
+          type="text"
+          value={pbp}
+          onChange={(e) => setPbp(e.target.value)}
+          onBlur={() => {
+            const v = pbp.trim() || null;
+            if (v !== (location.pbp_facility ?? null)) update({ pbp_facility: v });
+          }}
+          placeholder="facility name in PlayByPoint"
+          title="Links this club to its PlayByPoint facility so founders counts sync automatically — paste the facility's exact name (or ID) as it appears in PlayByPoint"
         />
       </label>
     </div>
