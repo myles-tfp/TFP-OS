@@ -361,11 +361,11 @@ export async function HqHome({
                   Close
                 </Link>
               </div>
-              <BoardMeta key={selected.id} location={selected} />
+              <BoardMeta location={selected} />
               {selectedBoard.length === 0 ? (
                 <p className="panel-note">No checklist yet for this location.</p>
               ) : (
-                <BoardEditor key={selected.id} phases={selectedBoard} locationId={selected.id} adminMode />
+                <BoardEditor phases={selectedBoard} locationId={selected.id} adminMode />
               )}
             </section>
           )}
