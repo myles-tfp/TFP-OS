@@ -554,6 +554,29 @@ a { color: inherit; }
 .loc-card:hover { border-color: var(--dillball); }
 .loc-card.on { border-color: var(--dillball); background: rgba(190, 229, 21, .06); }
 
+/* collapsed one-row strip of location pills */
+.loc-strip {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.loc-pill {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 7px;
+  text-decoration: none; color: var(--baseline);
+  background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
+  border-radius: 999px; padding: 7px 14px; font-size: 12.5px;
+  transition: border-color .15s; white-space: nowrap;
+}
+.loc-pill:hover { border-color: var(--dillball); }
+.loc-pill.on { border-color: var(--dillball); background: rgba(190, 229, 21, .06); }
+.loc-pill .pct { color: var(--backcourt); font-size: 11px; }
+.loc-toggle {
+  display: block; margin: 12px auto 0; background: none;
+  border: 1px solid var(--line); border-radius: 999px;
+  color: var(--backcourt); font-family: var(--font-body); font-size: 11.5px;
+  padding: 5px 16px; cursor: pointer; transition: border-color .15s, color .15s;
+}
+.loc-toggle:hover { border-color: var(--dillball); color: var(--dillball); }
+
 /* HQ column charts (x = locations, y = named rungs) */
 .colchart { display: flex; gap: 10px; }
 .colchart-y {

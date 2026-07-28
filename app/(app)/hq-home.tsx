@@ -6,6 +6,7 @@ import { BoardMeta } from "@/components/board-meta";
 import { StatusCalendar, type CalEvent } from "@/components/status-calendar";
 import { ColumnChart, FoundersTimeline, type ColumnDatum } from "@/components/hq-charts";
 import { CreateChecklist } from "@/components/create-checklist";
+import { LocGrid } from "@/components/loc-grid";
 import { NotesBoard, type Note } from "@/components/notes-board";
 import { currentPhase, phaseProgress, type BoardPhase } from "@/lib/board";
 import type { Franchisee, Location } from "@/lib/types";
@@ -331,40 +332,25 @@ export async function HqHome({
             <div style={{ marginBottom: 16 }}>
               <CreateChecklist />
             </div>
-            <div className="loc-grid">
-              {locs.map((loc) => {
+            <LocGrid
+              selectedId={selected?.id}
+              cards={locs.map((loc) => {
                 const board = boardsByLocation.get(loc.id) ?? [];
-                const allTasks = board.flatMap((p) => p.tasks);
-                const pct = phaseProgress(allTasks);
                 const phase = currentPhase(board);
-                const members = activeRoster.filter((f) => f.location_id === loc.id);
-                return (
-                  <Link
-                    href={`/?tab=checklists&loc=${loc.id}`}
-                    className={`loc-card${selected?.id === loc.id ? " on" : ""}`}
-                    key={loc.id}
-                  >
-                    <div className="t">{loc.name}</div>
-                    <div className="m">
-                      {phase ? phase.name : "No checklist yet"} · {members.length}{" "}
-                      member{members.length === 1 ? "" : "s"}
-                    </div>
-                    <div className="phase-bar">
-                      <div className="phase-bar-fill" style={{ width: `${pct}%` }} />
-                    </div>
-                    <div className="loc-stats">
-                      <span>{pct}% complete</span>
-                      <span>⭐ {loc.founding_members ?? 0}/{loc.founding_goal ?? 100}</span>
-                      <span>
-                        {loc.grand_opening
-                          ? `GO ${new Date(loc.grand_opening + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })}`
-                          : "GO tbd"}
-                      </span>
-                    </div>
-                  </Link>
-                );
+                return {
+                  id: loc.id,
+                  name: loc.name,
+                  phaseName: phase ? phase.name : "No checklist yet",
+                  members: activeRoster.filter((f) => f.location_id === loc.id).length,
+                  pct: phaseProgress(board.flatMap((p) => p.tasks)),
+                  founders: loc.founding_members ?? 0,
+                  goal: loc.founding_goal ?? 100,
+                  go: loc.grand_opening
+                    ? `GO ${new Date(loc.grand_opening + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })}`
+                    : "GO tbd",
+                };
               })}
-            </div>
+            />
           </section>
 
           {selected && (
