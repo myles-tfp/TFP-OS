@@ -104,6 +104,7 @@ export function ChatPanel({
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<SearchHit[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
@@ -225,12 +226,15 @@ export function ChatPanel({
     if (open && activeId) void loadMessages(activeId);
   }, [open, activeId, loadMessages]);
 
-  // keep the active channel inside the selected location
+  // keep the active channel inside the selected location (prefer live ones)
   useEffect(() => {
     if (!selLoc || channels.length === 0) return;
     const inLoc = channels.filter((c) => c.location_id === selLoc);
-    if (inLoc.length > 0 && !inLoc.some((c) => c.id === activeId)) {
-      setActiveId(inLoc[0].id);
+    const pool = inLoc.filter((c) => !c.archived).length
+      ? inLoc.filter((c) => !c.archived)
+      : inLoc;
+    if (pool.length > 0 && !inLoc.some((c) => c.id === activeId)) {
+      setActiveId(pool[0].id);
     }
   }, [selLoc, channels, activeId]);
 
@@ -270,40 +274,53 @@ export function ChatPanel({
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
-    if ((!text && !attachment) || !activeId || busy) return;
-    setBusy(true);
-    setDraft("");
-
-    let media_url: string | null = null;
-    let media_type: string | null = null;
-    if (attachment) {
-      // stored exactly as uploaded — no compression
-      const safe = attachment.name.replace(/[^\w.\-]+/g, "_");
-      const path = `chat/${meId}-${Date.now()}-${safe}`;
-      const { error: upErr } = await supabase.storage
-        .from("media")
-        .upload(path, attachment, { upsert: true });
-      if (upErr) {
-        window.alert(`Upload failed: ${upErr.message}`);
-        setBusy(false);
-        return;
-      }
-      const { data } = supabase.storage.from("media").getPublicUrl(path);
-      media_url = data.publicUrl;
-      media_type = attachment.type.startsWith("video") ? "video" : "image";
-      setAttachment(null);
+    if ((!text && !attachment) || !activeId) return;
+    if (busy) {
+      // never let a stuck state eat messages — reset and let them retry
+      setBusy(false);
+      return;
     }
+    setBusy(true);
+    setErr(null);
 
-    const { error } = await supabase.from("chat_messages").insert({
-      channel_id: activeId,
-      author_id: meId,
-      body: text || (media_type === "video" ? "📹" : "🖼️"),
-      media_url,
-      media_type,
-    });
-    if (error) window.alert(`Couldn't send: ${error.message}`);
-    await loadMessages(activeId);
-    setBusy(false);
+    try {
+      let media_url: string | null = null;
+      let media_type: string | null = null;
+      if (attachment) {
+        // stored exactly as uploaded — no compression
+        const safe = attachment.name.replace(/[^\w.\-]+/g, "_");
+        const path = `chat/${meId}-${Date.now()}-${safe}`;
+        const { error: upErr } = await supabase.storage
+          .from("media")
+          .upload(path, attachment, { upsert: true });
+        if (upErr) {
+          setErr(`Upload failed: ${upErr.message}`);
+          return;
+        }
+        const { data } = supabase.storage.from("media").getPublicUrl(path);
+        media_url = data.publicUrl;
+        media_type = attachment.type.startsWith("video") ? "video" : "image";
+      }
+
+      const { error } = await supabase.from("chat_messages").insert({
+        channel_id: activeId,
+        author_id: meId,
+        body: text || (media_type === "video" ? "📹" : "🖼️"),
+        media_url,
+        media_type,
+      });
+      if (error) {
+        setErr(`Couldn't send: ${error.message}`);
+        return; // draft is kept so nothing is lost
+      }
+      setDraft("");
+      setAttachment(null);
+      await loadMessages(activeId);
+    } catch (ex) {
+      setErr(`Couldn't send — check your connection and try again. (${String(ex)})`);
+    } finally {
+      setBusy(false);
+    }
   };
 
   // GIF search (debounced; trending when empty)
@@ -326,15 +343,23 @@ export function ChatPanel({
   const sendGif = async (url: string) => {
     if (!activeId) return;
     setGifOpen(false);
-    const { error } = await supabase.from("chat_messages").insert({
-      channel_id: activeId,
-      author_id: meId,
-      body: "",
-      media_url: url,
-      media_type: "image",
-    });
-    if (error) window.alert(`Couldn't send: ${error.message}`);
-    await loadMessages(activeId);
+    setErr(null);
+    try {
+      const { error } = await supabase.from("chat_messages").insert({
+        channel_id: activeId,
+        author_id: meId,
+        body: "",
+        media_url: url,
+        media_type: "image",
+      });
+      if (error) {
+        setErr(`Couldn't send GIF: ${error.message}`);
+        return;
+      }
+      await loadMessages(activeId);
+    } catch (ex) {
+      setErr(`Couldn't send GIF — check your connection and try again. (${String(ex)})`);
+    }
   };
 
   const archiveChannel = async (c: Channel) => {
@@ -734,6 +759,14 @@ export function ChatPanel({
           </div>
         ) : (
         <form className="chat-input-wrap" onSubmit={send}>
+          {err && (
+            <p className="chat-err" role="alert">
+              ⚠ {err}
+              <button type="button" onClick={() => setErr(null)} title="Dismiss">
+                ✕
+              </button>
+            </p>
+          )}
           {gifOpen && (
             <div className="gif-pop">
               <div className="gif-pop-head">

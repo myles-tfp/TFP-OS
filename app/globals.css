@@ -577,6 +577,17 @@ a { color: inherit; }
 }
 .loc-toggle:hover { border-color: var(--dillball); color: var(--dillball); }
 
+.chat-err {
+  display: flex; align-items: center; gap: 8px;
+  margin: 8px 14px 0; padding: 8px 12px;
+  background: rgba(239, 64, 69, .12); border: 1px solid rgba(239, 64, 69, .45);
+  border-radius: 9px; color: #ffb4b6; font-size: 12px;
+}
+.chat-err button {
+  margin-left: auto; background: none; border: none; color: #ffb4b6;
+  cursor: pointer; font-size: 12px; padding: 0 2px;
+}
+
 /* HQ column charts (x = locations, y = named rungs) */
 .colchart { display: flex; gap: 10px; }
 .colchart-y {
