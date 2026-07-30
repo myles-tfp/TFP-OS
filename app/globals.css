@@ -1048,6 +1048,7 @@ body.chat-open .rally-panel {
 .chat-body {
   flex: 1; overflow-y: auto; padding: 16px;
   display: flex; flex-direction: column; gap: 14px;
+  overscroll-behavior: contain; /* wheel stays in the chat, not the page behind */
 }
 .chat-msg { display: flex; gap: 10px; }
 .chat-avatar {

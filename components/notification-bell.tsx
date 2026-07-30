@@ -78,7 +78,14 @@ export function NotificationBell({
                 key={n.id}
                 className="bell-item"
                 href={n.link ?? "/"}
-                onClick={() => setOpen(false)}
+                onClick={(e) => {
+                  setOpen(false);
+                  // chat notifications open the chat panel directly
+                  if ((n.link ?? "").endsWith("#chat")) {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent("chat:open"));
+                  }
+                }}
               >
                 <span className="bell-icon">{KIND_ICONS[n.kind] ?? "•"}</span>
                 <span className="bell-text">

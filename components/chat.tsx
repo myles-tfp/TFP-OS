@@ -186,14 +186,18 @@ export function ChatPanel({
 
   const loadMessages = useCallback(
     async (channelId: string) => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("chat_messages")
         .select(
-          "id, channel_id, author_id, body, created_at, edited_at, media_url, media_type, franchisees(display_name, email, avatar_url, locations(name)), chat_reactions(franchisee_id, emoji)"
+          "id, channel_id, author_id, body, created_at, edited_at, media_url, media_type, franchisees!author_id(display_name, email, avatar_url, locations(name)), chat_reactions(franchisee_id, emoji)"
         )
         .eq("channel_id", channelId)
         .order("created_at", { ascending: true })
         .limit(100);
+      if (error) {
+        setErr(`Couldn't load messages: ${error.message}`);
+        return; // keep whatever is on screen instead of wiping it
+      }
       setMessages((data ?? []) as unknown as ChatMessage[]);
       await supabase.from("chat_reads").upsert({
         channel_id: channelId,
@@ -207,14 +211,28 @@ export function ChatPanel({
 
   useEffect(() => {
     const toggle = () => setOpen((o) => !o);
+    const openUp = () => setOpen(true);
+    const onHash = () => {
+      if (window.location.hash === "#chat") setOpen(true);
+    };
     window.addEventListener("chat:toggle", toggle);
+    window.addEventListener("chat:open", openUp);
+    window.addEventListener("hashchange", onHash);
     if (window.location.hash === "#chat") setOpen(true);
-    return () => window.removeEventListener("chat:toggle", toggle);
+    return () => {
+      window.removeEventListener("chat:toggle", toggle);
+      window.removeEventListener("chat:open", openUp);
+      window.removeEventListener("hashchange", onHash);
+    };
   }, []);
 
   // Rally politely scoots left while chat is open
   useEffect(() => {
     document.body.classList.toggle("chat-open", open);
+    // clear the #chat hash on close so notification links work again
+    if (!open && window.location.hash === "#chat") {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
     return () => document.body.classList.remove("chat-open");
   }, [open]);
 
