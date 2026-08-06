@@ -34,10 +34,14 @@ type Channel = {
   id: string;
   name: string;
   sort_order: number;
-  location_id: string;
+  location_id: string | null;
+  hub_id: string | null;
   archived: boolean;
   locations: { name: string } | null;
+  hubs: { name: string } | null;
 };
+
+type MyHub = { id: string; name: string; role: "owner" | "member" };
 
 type SearchHit = {
   id: string;
@@ -88,11 +92,13 @@ export function ChatPanel({
   isAdmin,
   canManage,
   myLocationId,
+  hubs = [],
 }: {
   meId: string;
   isAdmin: boolean;
   canManage: boolean;
   myLocationId: string | null;
+  hubs?: MyHub[];
 }) {
   const [open, setOpen] = useState(false);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -154,13 +160,19 @@ export function ChatPanel({
     const [{ data: chans }, { data: reads }] = await Promise.all([
       supabase
         .from("chat_channels")
-        .select("id, name, sort_order, location_id, archived, locations(name)")
+        .select("id, name, sort_order, location_id, hub_id, archived, locations(name), hubs(name)")
         .order("sort_order"),
       supabase.from("chat_reads").select("channel_id, last_read_at"),
     ]);
     const list = (chans ?? []) as unknown as Channel[];
     setChannels(list);
-    setSelLoc((prev) => prev ?? myLocationId ?? list[0]?.location_id ?? null);
+    setSelLoc(
+      (prev) =>
+        prev ??
+        myLocationId ??
+        list.find((c) => c.location_id)?.location_id ??
+        null
+    );
 
     if (list.length > 0) {
       const readMap = new Map(
@@ -244,9 +256,13 @@ export function ChatPanel({
     if (open && activeId) void loadMessages(activeId);
   }, [open, activeId, loadMessages]);
 
-  // keep the active channel inside the selected location (prefer live ones)
+  // keep the active channel inside the selected location (prefer live ones);
+  // hub channels are pinned below the divider and never auto-switch away
   useEffect(() => {
-    if (!selLoc || channels.length === 0) return;
+    if (channels.length === 0) return;
+    const current = channels.find((c) => c.id === activeId);
+    if (current?.hub_id) return; // hub channels stay put
+    if (!selLoc) return;
     const inLoc = channels.filter((c) => c.location_id === selLoc);
     const pool = inLoc.filter((c) => !c.archived).length
       ? inLoc.filter((c) => !c.archived)
@@ -383,7 +399,7 @@ export function ChatPanel({
   const archiveChannel = async (c: Channel) => {
     if (
       !window.confirm(
-        `Archive # ${c.name}? Nobody can post in it anymore, and only HQ can bring it back. The conversation history is kept.`
+        `Archive # ${c.name}? Nobody can post in it anymore, and only ${c.hub_id ? "the hub owner" : "HQ"} can bring it back. The conversation history is kept.`
       )
     )
       return;
@@ -438,26 +454,33 @@ export function ChatPanel({
     if (activeId) void loadMessages(activeId);
   };
 
-  const addChannel = async (locationId: string) => {
+  const addChannel = async (scope: { location_id?: string; hub_id?: string }) => {
     const name = window.prompt("Channel name (e.g. construction):");
     if (!name?.trim()) return;
     const clean = name.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-");
-    const siblings = channels.filter((c) => c.location_id === locationId);
+    const siblings = channels.filter((c) =>
+      scope.hub_id ? c.hub_id === scope.hub_id : c.location_id === scope.location_id
+    );
     const maxOrder = Math.max(0, ...siblings.map((c) => c.sort_order));
     const { error } = await supabase.from("chat_channels").insert({
-      location_id: locationId,
+      ...scope,
       name: clean,
       sort_order: maxOrder + 1,
     });
-    if (error) window.alert(`Couldn't create: ${error.message}`);
+    if (error) setErr(`Couldn't create: ${error.message}`);
     void loadChannels();
   };
 
+  const myHubRole = (hubId: string | null) =>
+    hubs.find((h) => h.id === hubId)?.role ?? null;
+
   const term = q.trim().toLowerCase();
 
-  // locations for the dropdown (admins see all; others just theirs)
+  // locations for the dropdown (admins see all; others just theirs).
+  // Hub channels live below the divider and never change with the dropdown.
   const groups = new Map<string, { name: string; channels: Channel[] }>();
   for (const c of channels) {
+    if (!c.location_id) continue;
     const g = groups.get(c.location_id) ?? {
       name: c.locations?.name ?? "Location",
       channels: [],
@@ -480,6 +503,22 @@ export function ChatPanel({
   const archivedChannels = channels.filter(
     (c) => c.location_id === selLoc && c.archived
   );
+
+  // team hub sections (pinned, independent of the location above the line)
+  const hubSections = hubs
+    .map((h) => ({
+      hub: h,
+      channels: channels.filter(
+        (c) =>
+          c.hub_id === h.id &&
+          !c.archived &&
+          (!term || c.name.toLowerCase().includes(term))
+      ),
+      archived: channels.filter((c) => c.hub_id === h.id && c.archived),
+    }))
+    .filter(
+      (s) => s.channels.length > 0 || s.archived.length > 0 || s.hub.role === "owner"
+    );
 
   const active = channels.find((c) => c.id === activeId);
 
@@ -530,7 +569,7 @@ export function ChatPanel({
             type="button"
             className="add-item"
             style={{ paddingLeft: 9 }}
-            onClick={() => addChannel(selLoc)}
+            onClick={() => addChannel({ location_id: selLoc })}
           >
             + New channel
           </button>
@@ -551,16 +590,69 @@ export function ChatPanel({
             ))}
           </details>
         )}
+
+        {hubSections.map((s) => (
+          <div key={s.hub.id} className="hub-section">
+            <p className="nav-label hub-label" title="Team hub — your internal team only">
+              <span className="hub-dot" />
+              {s.hub.name}
+            </p>
+            {s.channels.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`chat-chan hub${c.id === activeId ? " on" : ""}`}
+                onClick={() => setActiveId(c.id)}
+              >
+                <span># {c.name}</span>
+                {(unread[c.id] ?? 0) > 0 && (
+                  <span className="chat-unread">{unread[c.id]}</span>
+                )}
+              </button>
+            ))}
+            {s.hub.role === "owner" && (
+              <>
+                <button
+                  type="button"
+                  className="add-item"
+                  style={{ paddingLeft: 9 }}
+                  onClick={() => addChannel({ hub_id: s.hub.id })}
+                >
+                  + New channel
+                </button>
+                {s.archived.length > 0 && (
+                  <details className="chat-archived">
+                    <summary>Archived ({s.archived.length})</summary>
+                    {s.archived.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={`chat-chan archived${c.id === activeId ? " on" : ""}`}
+                        onClick={() => setActiveId(c.id)}
+                      >
+                        <span># {c.name}</span>
+                      </button>
+                    ))}
+                  </details>
+                )}
+              </>
+            )}
+          </div>
+        ))}
       </div>
 
       <div className="chat-main">
         <div className="chat-head">
           <h2>
             {active
-              ? `# ${active.name}${isAdmin && active.locations ? ` · ${active.locations.name}` : ""}`
+              ? active.hubs
+                ? `# ${active.name} · ${active.hubs.name}`
+                : `# ${active.name}${isAdmin && active.locations ? ` · ${active.locations.name}` : ""}`
               : "Chat"}
           </h2>
-          {active && (isAdmin || (canManage && active.location_id === myLocationId)) && (
+          {active && (active.hub_id
+            ? myHubRole(active.hub_id) === "owner"
+            : isAdmin || (canManage && active.location_id === myLocationId)) && (
             <span className="chan-menu-wrap">
               <button
                 type="button"
@@ -582,7 +674,7 @@ export function ChatPanel({
                     >
                       🗄 Archive channel
                     </button>
-                  ) : isAdmin ? (
+                  ) : (active.hub_id ? myHubRole(active.hub_id) === "owner" : isAdmin) ? (
                     <button
                       type="button"
                       onClick={() => {
@@ -622,7 +714,7 @@ export function ChatPanel({
                 className="chat-hit"
                 onClick={() => {
                   const chan = channels.find((c) => c.id === h.channel_id);
-                  if (chan) setSelLoc(chan.location_id);
+                  if (chan?.location_id) setSelLoc(chan.location_id);
                   setActiveId(h.channel_id);
                   setQ("");
                   setHits(null);

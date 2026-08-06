@@ -57,3 +57,60 @@ export async function createBoard(formData: FormData) {
   revalidatePath("/", "layout");
   redirect("/admin");
 }
+
+export async function createHub(formData: FormData) {
+  const franchisee = await getFranchisee();
+  const canCreate =
+    isAdminRole(franchisee) || franchisee.location_role === "manager";
+  if (!canCreate || !franchisee.location_id) redirect("/");
+
+  const supabase = await createClient();
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) redirect("/hub/new?error=missing");
+
+  const { data: hub, error } = await supabase
+    .from("hubs")
+    .insert({
+      name,
+      location_id: franchisee.location_id,
+      created_by: franchisee.id,
+    })
+    .select("id")
+    .single();
+  if (error || !hub) {
+    redirect(`/hub/new?error=${encodeURIComponent(error?.message ?? "failed")}`);
+  }
+
+  // hand-picked teammates (creator is added as owner by the DB trigger)
+  const members = formData
+    .getAll("members")
+    .map(String)
+    .filter((id) => id && id !== franchisee.id);
+  if (members.length > 0) {
+    await supabase
+      .from("hub_members")
+      .insert(members.map((id) => ({ hub_id: hub.id, franchisee_id: id })));
+  }
+
+  revalidatePath("/", "layout");
+  redirect(`/hub/${hub.id}`);
+}
+
+export async function addHubMember(hubId: string, franchiseeId: string) {
+  const supabase = await createClient();
+  await supabase
+    .from("hub_members")
+    .insert({ hub_id: hubId, franchisee_id: franchiseeId });
+  revalidatePath(`/hub/${hubId}`);
+}
+
+export async function removeHubMember(hubId: string, franchiseeId: string) {
+  const supabase = await createClient();
+  await supabase
+    .from("hub_members")
+    .delete()
+    .eq("hub_id", hubId)
+    .eq("franchisee_id", franchiseeId);
+  revalidatePath(`/hub/${hubId}`);
+}

@@ -588,6 +588,48 @@ a { color: inherit; }
   cursor: pointer; font-size: 12px; padding: 0 2px;
 }
 
+/* ---- Team Hubs ---- */
+.hub-switch {
+  width: 100%; margin-bottom: 8px;
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line);
+  border-radius: 9px; padding: 7px 10px;
+  color: var(--baseline); font-family: var(--font-body); font-size: 12px;
+  font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  cursor: pointer; outline: none; color-scheme: dark;
+}
+.hub-switch:hover, .hub-switch:focus { border-color: var(--dillball); }
+
+.hub-section {
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--line); /* the divider between worlds */
+}
+.hub-label {
+  display: flex; align-items: center; gap: 7px; margin: 0 0 8px 6px;
+}
+.hub-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--hub-accent, #3fc9d6); flex-shrink: 0;
+}
+.chat-chan.hub.on { border-color: var(--hub-accent, #3fc9d6); }
+
+.team-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 4px; border-bottom: 1px solid var(--line); font-size: 13.5px;
+}
+.team-row .pill {
+  margin-left: auto; font-size: 10.5px; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--backcourt);
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
+}
+
+/* Universal team-hub mode: same for every location — lime means Main Hub
+   with HQ, teal means your team's private space. */
+body.team-theme {
+  --dillball: #3fc9d6;
+  --hub-accent: #3fc9d6;
+}
+body.team-theme .os-tag { color: #3fc9d6; }
+
 /* HQ column charts (x = locations, y = named rungs) */
 .colchart { display: flex; gap: 10px; }
 .colchart-y {

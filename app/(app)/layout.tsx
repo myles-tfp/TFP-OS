@@ -12,7 +12,7 @@ export default async function AppLayout({
   const supabase = await createClient();
   const isAdmin = isAdminRole(franchisee);
 
-  const [{ data: topics }, { data: notifications }, { data: chatUnread }] =
+  const [{ data: topics }, { data: notifications }, { data: chatUnread }, { data: hubRows }] =
     await Promise.all([
       supabase.from("topics").select("id, name, status").order("sort_order"),
       supabase
@@ -21,7 +21,18 @@ export default async function AppLayout({
         .order("created_at", { ascending: false })
         .limit(15),
       supabase.rpc("unread_chat_count"),
+      supabase
+        .from("hub_members")
+        .select("role, hubs(id, name, archived)")
+        .eq("franchisee_id", franchisee.id),
     ]);
+
+  const myHubs = ((hubRows ?? []) as unknown as {
+    role: "owner" | "member";
+    hubs: { id: string; name: string; archived: boolean } | null;
+  }[])
+    .filter((r) => r.hubs && !r.hubs.archived)
+    .map((r) => ({ id: r.hubs!.id, name: r.hubs!.name, role: r.role }));
 
   const seenAt = franchisee.notifications_seen_at
     ? new Date(franchisee.notifications_seen_at).getTime()
@@ -36,6 +47,7 @@ export default async function AppLayout({
         franchisee={franchisee}
         topics={(topics ?? []) as Topic[]}
         chatUnread={chatUnread ?? 0}
+        hubs={myHubs}
       />
       <main className="main">{children}</main>
       <NotificationBell
@@ -47,6 +59,7 @@ export default async function AppLayout({
         isAdmin={isAdmin}
         canManage={franchisee.location_role === "manager"}
         myLocationId={franchisee.location_id}
+        hubs={myHubs}
       />
       <RallyBubble />
       <RallyPanel />

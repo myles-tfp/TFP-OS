@@ -2,7 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { NavItem } from "@/components/nav-item";
 import { ChatNavItem } from "@/components/chat";
-import type { Franchisee } from "@/lib/types";
+import { HubSwitcher } from "@/components/hub-switcher";
+import type { Franchisee, MyHub } from "@/lib/types";
 import pkg from "@/package.json";
 
 export type Topic = {
@@ -15,10 +16,12 @@ export function Sidebar({
   franchisee,
   topics,
   chatUnread = 0,
+  hubs = [],
 }: {
   franchisee: Franchisee;
   topics: Topic[];
   chatUnread?: number;
+  hubs?: MyHub[];
 }) {
   const isAdmin = franchisee.role === "admin" || franchisee.role === "owner";
   const isManager = franchisee.location_role === "manager" && !!franchisee.location_id;
@@ -37,7 +40,7 @@ export function Sidebar({
       </div>
 
       <div className="nav-group">
-        <p className="nav-label">Main Hub</p>
+        <HubSwitcher hubs={hubs} canCreate={isAdmin || isManager} />
         <NavItem name="Home" href="/" />
         <NavItem name="Saved" href="/saved" />
         <ChatNavItem unread={chatUnread} />

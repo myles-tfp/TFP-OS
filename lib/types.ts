@@ -12,6 +12,12 @@ export interface Location {
   created_at?: string;
 }
 
+export interface MyHub {
+  id: string;
+  name: string;
+  role: "owner" | "member";
+}
+
 export interface Franchisee {
   id: string;
   email: string;
